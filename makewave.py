@@ -5,11 +5,13 @@ def mtof(midi_note_number):
     """
     Turns midi note number into frequency
     """
-    #d = 69 + 12 log(base = 2, of = (f / 440.0))
-    #(d - 69) / 12 = log(base = 2, of = (f / 440.0))
-    #pow(base = 2, of = (d - 69) / 12) = f / 440.0
-    #440.0 * pow(base = 2, of = (d - 69) / 12) = f
     return 440.0 * pow(2, (midi_note_number - 69) / 12);
+
+def ftom(frequency):
+    """
+    Turns frequency into midi note number
+    """
+    return 69 + 12 * math.log(frequency / 440.0, 2)
 
 notes = [0, 4, 7, 0 + 12, 4 + 12, 7 + 12, 24, 7 + 12, 4 + 12, 12, 7, 4]
 
