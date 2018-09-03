@@ -13,6 +13,24 @@ def ftom(frequency):
     """
     return 69 + 12 * math.log(frequency / 440.0, 2)
 
+class Sine:
+    def render(self, time_in_seconds, midi_note_number):
+        frequency = mtof(midi_note_number)
+        return math.sin(math.pi * 2 * time_in_seconds * frequency)
+
+class Square:
+    def render(self, time_in_seconds, midi_note_number):
+        frequency = mtof(midi_note_number)
+        from_zero_to_one = round(math.fmod(time_in_seconds * frequency, 1.0))
+        return from_zero_to_one * 2.0 - 1.0
+
+class Saw:
+    def render(self, time_in_seconds, midi_note_number):
+        frequency = mtof(midi_note_number)
+        from_zero_to_one = math.fmod(time_in_seconds * frequency, 1.0)
+        return from_zero_to_one * 2.0 - 1.0
+
+instrument = Square();
 notes = [0, 4, 7, 0 + 12, 4 + 12, 7 + 12, 24, 7 + 12, 4 + 12, 12, 7, 4]
 
 samples_per_second = 44100
@@ -21,8 +39,8 @@ data = bytearray()
 for x in range(0, song_length_seconds * samples_per_second):
     time_in_seconds = x / samples_per_second
     progress_through_song = time_in_seconds / song_length_seconds
-    frequency = mtof(69+notes[int(progress_through_song * len(notes)*1) % len(notes)])
-    positive_or_negative = math.sin(math.pi * 2 * time_in_seconds * frequency)
+    note = 69 + notes[int(progress_through_song * len(notes)*1) % len(notes)]
+    positive_or_negative = instrument.render(time_in_seconds, note)
     unitless = positive_or_negative / 2.0 + .5
     value = unitless * 255
     data.append(int(value))
