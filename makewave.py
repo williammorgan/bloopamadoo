@@ -1,5 +1,6 @@
 import wave
 import math
+import random
 
 def mtof(midi_note_number):
     """
@@ -45,8 +46,11 @@ class BassDrum:
         from_zero_to_one = math.fmod(time_in_seconds * frequency, 1.0)
         return from_zero_to_one * 2.0 - 1.0
 
+class Noise:
+    def render(self, time_in_seconds, midi_note_number):
+        return random.uniform(-1.0, 1.0)
 
-instrument = BassDrum();
+instrument = Noise();
 notes = [0, 4, 7, 0 + 12, 4 + 12, 7 + 12, 24, 7 + 12, 4 + 12, 12, 7, 4]
 
 samples_per_second = 44100
