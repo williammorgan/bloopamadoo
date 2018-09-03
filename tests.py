@@ -14,6 +14,13 @@ class MyTest(unittest.TestCase):
     def test_ftom_middle_c(self):
         self.assertEqual(makewave.ftom(261.6255653005986), 60.0)
 
+    def test_lerp(self):
+        self.assertEqual(makewave.lerp(10, 20, -0.5), 5)
+        self.assertEqual(makewave.lerp(10, 20,  0.0), 10)
+        self.assertEqual(makewave.lerp(10, 20,  0.5), 15)
+        self.assertEqual(makewave.lerp(10, 20,  1.0), 20)
+        self.assertEqual(makewave.lerp(10, 20,  1.5), 25)
+
 if __name__ == '__main__':
     unittest.main()
 

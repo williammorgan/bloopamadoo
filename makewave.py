@@ -13,6 +13,13 @@ def ftom(frequency):
     """
     return 69 + 12 * math.log(frequency / 440.0, 2)
 
+def lerp(a, b, t):
+    """
+    Linearly interpolate between a and b,
+    producing a value that is t bettween a and b.
+    """
+    return a + (b-a) * t
+
 class Sine:
     def render(self, time_in_seconds, midi_note_number):
         frequency = mtof(midi_note_number)
@@ -30,7 +37,16 @@ class Saw:
         from_zero_to_one = math.fmod(time_in_seconds * frequency, 1.0)
         return from_zero_to_one * 2.0 - 1.0
 
-instrument = Square();
+class BassDrum:
+    def render(self, time_in_seconds, midi_note_number):
+        frequency = 1.0 / (time_in_seconds / 100 + 0.0001)
+        #frequency = lerp(440, 10, time_in_seconds)
+        #return math.sin(math.pi * 2 * time_in_seconds * frequency)
+        from_zero_to_one = math.fmod(time_in_seconds * frequency, 1.0)
+        return from_zero_to_one * 2.0 - 1.0
+
+
+instrument = BassDrum();
 notes = [0, 4, 7, 0 + 12, 4 + 12, 7 + 12, 24, 7 + 12, 4 + 12, 12, 7, 4]
 
 samples_per_second = 44100
