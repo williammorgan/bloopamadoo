@@ -54,7 +54,7 @@ class Commands(Enum):
     release = 5
     stop = 6
 
-def sine(commands, samples_per_second):
+def voice_generator(commands, waveform, samples_per_second):
     time_between_calls = 1.0 / samples_per_second
     time_in_seconds = 0.0
     volume = 1.0
@@ -78,7 +78,7 @@ def sine(commands, samples_per_second):
                     raise StopIteration
 
         frequency = mtof(midi_note_number)
-        sample = math.sin(math.pi * 2 * time_in_seconds * frequency)
+        sample = waveform.render(time_in_seconds, frequency)
         sample *= volume
         sample *= my_adsr.send(released)
 
@@ -86,24 +86,21 @@ def sine(commands, samples_per_second):
         time_in_seconds += time_between_calls
 
 class Sine:
-    def render(self, time_in_seconds, midi_note_number):
-        frequency = mtof(midi_note_number)
+    def render(self, time_in_seconds, frequency):
         return math.sin(math.pi * 2 * time_in_seconds * frequency)
 
 class Square:
-    def render(self, time_in_seconds, midi_note_number):
-        frequency = mtof(midi_note_number)
+    def render(self, time_in_seconds, frequency):
         from_zero_to_one = round(math.fmod(time_in_seconds * frequency, 1.0))
         return from_zero_to_one * 2.0 - 1.0
 
 class Saw:
-    def render(self, time_in_seconds, midi_note_number):
-        frequency = mtof(midi_note_number)
+    def render(self, time_in_seconds, frequency):
         from_zero_to_one = math.fmod(time_in_seconds * frequency, 1.0)
         return from_zero_to_one * 2.0 - 1.0
 
 class BassDrum:
-    def render(self, time_in_seconds, midi_note_number):
+    def render(self, time_in_seconds, frequency):
         frequency = 1.0 / (time_in_seconds / 100 + 0.0001)
         #frequency = lerp(440, 10, time_in_seconds)
         #return math.sin(math.pi * 2 * time_in_seconds * frequency)
@@ -111,7 +108,7 @@ class BassDrum:
         return from_zero_to_one * 2.0 - 1.0
 
 class Noise:
-    def render(self, time_in_seconds, midi_note_number):
+    def render(self, time_in_seconds, frequency):
         return random.uniform(-1.0, 1.0)
 
 instrument = Sine()
@@ -143,7 +140,8 @@ while len(timed_commands) > 0 or len(voices) > 0:
     if len(timed_commands) > 0 and timed_commands[0][0] < current_sample:
         timed_command = timed_commands.pop(0)
         if timed_command[1][0] == Commands.set_pitch:
-            voices.append(sine([timed_command[1]], samples_per_second))
+            waveform = BassDrum() if (len(timed_commands)-1)/2 % 4 == 0 else Noise()
+            voices.append(voice_generator([timed_command[1]], waveform, samples_per_second))
             command = None
         else:
             command = [timed_command[1]]
