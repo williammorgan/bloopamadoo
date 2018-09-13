@@ -21,7 +21,7 @@ def lerp(a, b, t):
     """
     return a + (b-a) * t
 
-def adsr(attack, decay, sustain, release, samples_per_second):
+def adsr_generator(attack, decay, sustain, release, samples_per_second):
     """
     Returns a generator object that produces a series of values
     ramping over time from 0 to 1 to the sustain level and back to 0.
@@ -45,45 +45,40 @@ def adsr(attack, decay, sustain, release, samples_per_second):
         value -= release_rate
         yield value
 
-from enum import Enum
-class Commands(Enum):
-    set_volume = 1
-    change_volume = 2
-    set_pitch = 3
-    change_pitch = 4
-    release = 5
-    stop = 6
+class Voice:
+    def __init__(self, waveform, samples_per_second):
+        self.waveform = waveform
+        self.time_between_calls = 1.0 / samples_per_second
+        self.time_in_seconds = 0.0
+        self.volume = 1.0
+        self.midi_note_number = 69
+        self.adsr = adsr_generator(0.01, 0.01, 0.75, 0.1, samples_per_second)
+        self.released = None
+        self.stopped = False
 
-def voice_generator(commands, waveform, samples_per_second):
-    time_between_calls = 1.0 / samples_per_second
-    time_in_seconds = 0.0
-    volume = 1.0
-    midi_note_number = 69
-    my_adsr = adsr(0.01, 0.01, 0.75, 0.1, samples_per_second)
-    released = None
-    while True:
-        if commands is not None:
-            for command, param in commands:
-                if (command == Commands.set_volume):
-                    volume = param
-                elif (command == Commands.change_volume):
-                    volume += param
-                elif (command == Commands.set_pitch):
-                    midi_note_number = param
-                elif (command == Commands.change_pitch):
-                    midi_note_number += param
-                elif (command == Commands.release):
-                    released = True
-                elif (command == Commands.stop):
-                    raise StopIteration
+    def set_volume(self, volume):
+        self.volume = volume
+    def change_volume(self, delta):
+        self.volume += delta
+    def set_pitch(self, midi_note_number):
+        self.midi_note_number = midi_note_number
+    def change_pitch(self, delta):
+        self.midi_note_number += delta
+    def release(self):
+        self.released = True
+    def stop(self):
+        self.stopped = True
 
-        frequency = mtof(midi_note_number)
-        sample = waveform.render(time_in_seconds, frequency)
-        sample *= volume
-        sample *= my_adsr.send(released)
+    def __next__(self):
+        if self.stopped:
+            raise StopIteration
+        frequency = mtof(self.midi_note_number)
+        sample = self.waveform.render(self.time_in_seconds, frequency)
+        sample *= self.volume
+        sample *= self.adsr.send(self.released)
 
-        commands = (yield sample)
-        time_in_seconds += time_between_calls
+        self.time_in_seconds += self.time_between_calls
+        return sample
 
 class Sine:
     def render(self, time_in_seconds, frequency):
@@ -118,6 +113,7 @@ major_triad = [0, 4, 7]
 notes = major_scale_notes + [12, 14, 12] + major_scale_notes[::-1] 
 #notes = [0, 2, 3, 5, 7]
 
+notes = [x + 69 for x in notes]
 
 
 samples_per_second = 44100
@@ -125,32 +121,32 @@ song_length_seconds = 2
 data = bytearray()
 
 timed_commands = []
+voices = []
+
 for i in range(len(notes)):
-    note_on_command = (Commands.set_pitch, notes[i] + 69.0)
+    voice = Voice(Sine(), samples_per_second)
+    def note_on_command(voice = voice, i = i): # I don't like that I have to do this for the closure to work correctly
+        voice.set_pitch(notes[i])
+        voices.append(voice)
     timed_note_on_command = (i * 44100 / 4, note_on_command)
     timed_commands.append(timed_note_on_command)
-    note_off_command = (Commands.release, None)
+    def note_off_command(voice = voice):
+        voice.release()
     timed_note_off_command = ((i * 44100 / 4) + (44100 / 8), note_off_command)
     timed_commands.append(timed_note_off_command)
 
-current_sample = 1
-voices = [];
+current_sample = 0
 while len(timed_commands) > 0 or len(voices) > 0:
-    command = None
-    if len(timed_commands) > 0 and timed_commands[0][0] < current_sample:
+    while len(timed_commands) > 0 and timed_commands[0][0] <= current_sample:
         timed_command = timed_commands.pop(0)
-        if timed_command[1][0] == Commands.set_pitch:
-            waveform = BassDrum() if (len(timed_commands)-1)/2 % 4 == 0 else Noise()
-            voices.append(voice_generator([timed_command[1]], waveform, samples_per_second))
-            command = None
-        else:
-            command = [timed_command[1]]
-    sample = 0
-    for voice in voices:
+        timed_command[1]()
+
+    sample = 0.0
+    for i in range(len(voices)):
         try:
-            sample += voice.send(command)
+            sample += next(voices[i])
         except StopIteration:
-            voices = []
+            voices.pop(i)
     unitless = sample / 2.0 + .5
     value = unitless * 255
     trimmed = min(max(value, 0), 255)
