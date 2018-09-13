@@ -126,13 +126,16 @@ for i in range(len(notes)):
     voice = Voice(Sine(), samples_per_second)
     def note_on_command(voice = voice, i = i): # I don't like that I have to do this for the closure to work correctly
         voice.set_pitch(notes[i])
+        voice.set_volume(.2)
         voices.append(voice)
     timed_note_on_command = (i * 44100 / 4, note_on_command)
     timed_commands.append(timed_note_on_command)
     def note_off_command(voice = voice):
         voice.release()
-    timed_note_off_command = ((i * 44100 / 4) + (44100 / 8), note_off_command)
+    timed_note_off_command = ((i * 44100 / 4) + (44100 / 2), note_off_command)
     timed_commands.append(timed_note_off_command)
+
+timed_commands.sort(key = lambda a: a[0])
 
 current_sample = 0
 while len(timed_commands) > 0 or len(voices) > 0:
@@ -141,11 +144,19 @@ while len(timed_commands) > 0 or len(voices) > 0:
         timed_command[1]()
 
     sample = 0.0
+
+    voices_to_remove = []
     for i in range(len(voices)):
         try:
             sample += next(voices[i])
         except StopIteration:
-            voices.pop(i)
+            voices_to_remove.append(i)
+    new_voices = []
+    for i in range(len(voices)):
+        if i not in voices_to_remove:
+            new_voices.append(voices[i])
+    voices = new_voices
+
     unitless = sample / 2.0 + .5
     value = unitless * 255
     trimmed = min(max(value, 0), 255)
