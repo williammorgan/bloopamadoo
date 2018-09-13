@@ -109,9 +109,9 @@ class Noise:
 #notes = [0, 4, 7, 0 + 12, 4 + 12, 7 + 12, 24, 7 + 12, 4 + 12, 12, 7, 4]
 major_scale_notes = [0, 2, 4, 5, 7, 9, 11]
 major_triad = [0, 4, 7]
-notes = major_scale_notes + [12, 14, 12] + major_scale_notes[::-1] 
+#notes = major_scale_notes + [12, 14, 12] + major_scale_notes[::-1] 
 #notes = [0, 2, 3, 5, 7]
-
+notes = major_triad * 6
 #make notes absoulute from middle a, instead of relative.
 notes = [x + 69 for x in notes]
 
@@ -122,17 +122,36 @@ data = bytearray()
 timed_commands = []
 voices = []
 
+beat_pattern = ['bass', None, None, None, 'noise', None, 'bass', 'bass', 'bass', None, 'bass', None, 'noise', None, None, None]
+beat = beat_pattern * 2
+for i in range(len(beat)):
+    if beat[i] == 'bass':
+        voice = Voice(BassDrum(), samples_per_second)
+    elif beat[i] == 'noise':
+        voice = Voice(Noise(), samples_per_second)
+    else:
+        continue;
+    def note_on_command(voice = voice):
+        voice.set_volume(0.1)
+        voices.append(voice)
+    timed_note_on_command = (i * 44100 / 8, note_on_command)
+    timed_commands.append(timed_note_on_command)
+    def note_off_command(voice = voice):
+        voice.release()
+    timed_note_off_command = ((i * 44100 / 8) + (44100 / 16), note_off_command)
+    timed_commands.append(timed_note_off_command)
+
 for i in range(len(notes)):
-    voice = Voice(Sine(), samples_per_second)
+    voice = Voice(Saw(), samples_per_second)
     def note_on_command(voice = voice, i = i): # I don't like that I have to do this for the closure to work correctly
         voice.set_pitch(notes[i])
-        voice.set_volume(.2)
+        voice.set_volume(.05)
         voices.append(voice)
     timed_note_on_command = (i * 44100 / 4, note_on_command)
     timed_commands.append(timed_note_on_command)
     def note_off_command(voice = voice):
         voice.release()
-    timed_note_off_command = ((i * 44100 / 4) + (44100 / 2), note_off_command)
+    timed_note_off_command = ((i * 44100 / 4) + (44100 / 8), note_off_command)
     timed_commands.append(timed_note_off_command)
 
 timed_commands.sort(key = lambda a: a[0])
