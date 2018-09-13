@@ -106,18 +106,17 @@ class Noise:
     def render(self, time_in_seconds, frequency):
         return random.uniform(-1.0, 1.0)
 
-instrument = Sine()
-notes = [0, 4, 7, 0 + 12, 4 + 12, 7 + 12, 24, 7 + 12, 4 + 12, 12, 7, 4]
+#notes = [0, 4, 7, 0 + 12, 4 + 12, 7 + 12, 24, 7 + 12, 4 + 12, 12, 7, 4]
 major_scale_notes = [0, 2, 4, 5, 7, 9, 11]
 major_triad = [0, 4, 7]
 notes = major_scale_notes + [12, 14, 12] + major_scale_notes[::-1] 
 #notes = [0, 2, 3, 5, 7]
 
+#make notes absoulute from middle a, instead of relative.
 notes = [x + 69 for x in notes]
 
 
 samples_per_second = 44100
-song_length_seconds = 2
 data = bytearray()
 
 timed_commands = []
@@ -153,16 +152,6 @@ while len(timed_commands) > 0 or len(voices) > 0:
     data.append(int(trimmed))
     current_sample += 1
 
-'''
-for x in range(0, song_length_seconds * samples_per_second):
-    time_in_seconds = x / samples_per_second
-    progress_through_song = time_in_seconds / song_length_seconds
-    note = 69 + notes[int(progress_through_song * len(notes)*1) % len(notes)]
-    positive_or_negative = instrument.render(time_in_seconds, note)
-    unitless = positive_or_negative / 2.0 + .5
-    value = unitless * 255
-    data.append(int(value))
-'''
 wave_write = wave.open('billtest.wav', mode='wb')
 wave_write.setnchannels(1)
 wave_write.setframerate(samples_per_second)
