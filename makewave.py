@@ -164,16 +164,13 @@ while len(timed_commands) > 0 or len(voices) > 0:
 
     sample = 0.0
 
-    voices_to_remove = []
-    for i in range(len(voices)):
-        try:
-            sample += next(voices[i])
-        except StopIteration:
-            voices_to_remove.append(i)
     new_voices = []
-    for i in range(len(voices)):
-        if i not in voices_to_remove:
-            new_voices.append(voices[i])
+    for voice in voices:
+        try:
+            sample += next(voice)
+            new_voices.append(voice)
+        except StopIteration:
+            pass
     voices = new_voices
 
     unitless = sample / 2.0 + .5
