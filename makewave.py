@@ -122,15 +122,15 @@ data = bytearray()
 timed_commands = []
 voices = []
 
-beat_pattern = ['bass', None, None, None, 'noise', None, 'bass', 'bass', 'bass', None, 'bass', None, 'noise', None, None, None]
+beat_pattern = [BassDrum, None,     None,     None,
+                Noise,    None,     BassDrum, BassDrum,
+                BassDrum, None,     BassDrum, None,
+                Noise,    None,     None,     None]
 beat = beat_pattern * 2
 for i in range(len(beat)):
-    if beat[i] == 'bass':
-        voice = Voice(BassDrum(), samples_per_second)
-    elif beat[i] == 'noise':
-        voice = Voice(Noise(), samples_per_second)
-    else:
+    if beat[i] is None:
         continue;
+    voice = Voice(beat[i](), samples_per_second)
     def note_on_command(voice = voice):
         voice.set_volume(0.1)
         voices.append(voice)
