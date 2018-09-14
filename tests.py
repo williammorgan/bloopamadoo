@@ -1,7 +1,7 @@
 import unittest
 import makewave
 
-class MyTest(unittest.TestCase):
+class MakewaveTests(unittest.TestCase):
     def test_mtof_middle_a(self):
         self.assertEqual(makewave.mtof(69.0), 440.0)
 
@@ -22,26 +22,26 @@ class MyTest(unittest.TestCase):
         self.assertEqual(makewave.lerp(10, 20,  1.5), 25)
 
     def test_adsr(self):
-        test_adsr = makewave.adsr(0.5, 0.5, 0.75, 0.5, 10)
-        self.assertAlmostEqual(test_adsr.__next__(), 0.2,  places = 2)
-        self.assertAlmostEqual(test_adsr.__next__(), 0.4,  places = 2)
-        self.assertAlmostEqual(test_adsr.__next__(), 0.6,  places = 2)
-        self.assertAlmostEqual(test_adsr.__next__(), 0.8,  places = 2)
-        self.assertAlmostEqual(test_adsr.__next__(), 1.0,  places = 2)
-        self.assertAlmostEqual(test_adsr.__next__(), 0.95, places = 2)
-        self.assertAlmostEqual(test_adsr.__next__(), 0.90, places = 2)
-        self.assertAlmostEqual(test_adsr.__next__(), 0.85, places = 2)
-        self.assertAlmostEqual(test_adsr.__next__(), 0.80, places = 2)
-        self.assertAlmostEqual(test_adsr.__next__(), 0.75, places = 2)
-        self.assertAlmostEqual(test_adsr.__next__(), 0.75, places = 2)
-        self.assertAlmostEqual(test_adsr.__next__(), 0.75, places = 2)
-        self.assertAlmostEqual(test_adsr.send(True), 0.60, places = 2)
-        self.assertAlmostEqual(test_adsr.__next__(), 0.45, places = 2)
-        self.assertAlmostEqual(test_adsr.__next__(), 0.30, places = 2)
-        self.assertAlmostEqual(test_adsr.__next__(), 0.15, places = 2)
-        self.assertAlmostEqual(test_adsr.__next__(), 0.0, places = 2)
+        adsr = makewave.adsr_generator(0.5, 0.5, 0.75, 0.5, 10)
+        self.assertAlmostEqual(adsr.__next__(), 0.2,  places = 2)
+        self.assertAlmostEqual(adsr.__next__(), 0.4,  places = 2)
+        self.assertAlmostEqual(adsr.__next__(), 0.6,  places = 2)
+        self.assertAlmostEqual(adsr.__next__(), 0.8,  places = 2)
+        self.assertAlmostEqual(adsr.__next__(), 1.0,  places = 2)
+        self.assertAlmostEqual(adsr.__next__(), 0.95, places = 2)
+        self.assertAlmostEqual(adsr.__next__(), 0.90, places = 2)
+        self.assertAlmostEqual(adsr.__next__(), 0.85, places = 2)
+        self.assertAlmostEqual(adsr.__next__(), 0.80, places = 2)
+        self.assertAlmostEqual(adsr.__next__(), 0.75, places = 2)
+        self.assertAlmostEqual(adsr.__next__(), 0.75, places = 2)
+        self.assertAlmostEqual(adsr.__next__(), 0.75, places = 2)
+        self.assertAlmostEqual(adsr.send(True), 0.60, places = 2)
+        self.assertAlmostEqual(adsr.__next__(), 0.45, places = 2)
+        self.assertAlmostEqual(adsr.__next__(), 0.30, places = 2)
+        self.assertAlmostEqual(adsr.__next__(), 0.15, places = 2)
+        self.assertAlmostEqual(adsr.__next__(), 0.0, places = 2)
         with self.assertRaises(StopIteration):
-            test_adsr.__next__()
+            adsr.__next__()
 
 if __name__ == '__main__':
     unittest.main()
