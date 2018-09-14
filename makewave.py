@@ -34,15 +34,15 @@ def adsr_generator(attack, decay, sustain, release, samples_per_second):
     decay_rate = (1.0 - sustain) / (decay * samples_per_second)
     release_rate = sustain / (release * samples_per_second)
     while value < 1.0 and not released:
-        value += attack_rate
+        value = min(value + attack_rate, 1.0)
         released = (yield value)
     while value > sustain and not released:
-        value -= decay_rate
+        value = max(value - decay_rate, sustain)
         released = (yield value)
     while not released:
         released = (yield value)
     while value > 0.0:
-        value -= release_rate
+        value = max(value - release_rate, 0.0)
         yield value
 
 class Voice:

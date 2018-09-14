@@ -43,6 +43,9 @@ class MakewaveTests(unittest.TestCase):
         with self.assertRaises(StopIteration):
             adsr.__next__()
 
+        adsr = makewave.adsr_generator(0.0001, 0.0001, 1.0, 0.0001, 10)
+        self.assertAlmostEqual(adsr.__next__(), 1.0,  places = 2)
+
 if __name__ == '__main__':
     unittest.main()
 
