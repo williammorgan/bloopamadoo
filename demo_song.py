@@ -1,4 +1,4 @@
-import makewave as bpmd
+import bloopamadoo as bpmd
 
 #notes = [0, 4, 7, 0 + 12, 4 + 12, 7 + 12, 24, 7 + 12, 4 + 12, 12, 7, 4]
 major_scale_notes = [0, 2, 4, 5, 7, 9, 11]
