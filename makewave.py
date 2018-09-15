@@ -136,11 +136,11 @@ for i in range(len(beat)):
     def note_on_command(voice = voice):
         voice.set_volume(0.1)
         voices.append(voice)
-    timed_note_on_command = (i * 44100 / 8, note_on_command)
+    timed_note_on_command = (i / 8.0, note_on_command)
     timed_commands.append(timed_note_on_command)
     def note_off_command(voice = voice):
         voice.release()
-    timed_note_off_command = ((i * 44100 / 8) + (44100 / 16), note_off_command)
+    timed_note_off_command = ((i / 8.0) + (1.0 / 16.0), note_off_command)
     timed_commands.append(timed_note_off_command)
 
 for i in range(len(arpeggio_notes)):
@@ -150,11 +150,11 @@ for i in range(len(arpeggio_notes)):
         voice.set_volume(.025)
         voice.adsr = adsr_generator(0.0001, 0.0001, 1.0, 0.0001, samples_per_second)
         voices.append(voice)
-    timed_note_on_command = (i * 44100 / 24, note_on_command)
+    timed_note_on_command = (i / 24.0, note_on_command)
     timed_commands.append(timed_note_on_command)
     def note_off_command(voice = voice):
         voice.release()
-    timed_note_off_command = ((i * 44100 / 24) + (44100 / 24), note_off_command)
+    timed_note_off_command = ((i / 24.0) + (1.0 / 24.0), note_off_command)
     timed_commands.append(timed_note_off_command)
 
 for i in range(len(melody_notes)):
@@ -163,18 +163,19 @@ for i in range(len(melody_notes)):
         voice.set_pitch(melody_notes[i])
         voice.set_volume(.05)
         voices.append(voice)
-    timed_note_on_command = (i * 44100 / 4, note_on_command)
+    timed_note_on_command = (i / 4.0, note_on_command)
     timed_commands.append(timed_note_on_command)
     def note_off_command(voice = voice):
         voice.release()
-    timed_note_off_command = ((i * 44100 / 4) + (44100 / 8), note_off_command)
+    timed_note_off_command = ((i / 4.0) + (1.0 / 8.0), note_off_command)
     timed_commands.append(timed_note_off_command)
 
 timed_commands.sort(key = lambda a: a[0])
 
 current_sample = 0
 while len(timed_commands) > 0 or len(voices) > 0:
-    while len(timed_commands) > 0 and timed_commands[0][0] <= current_sample:
+    current_seconds = current_sample / 44100
+    while len(timed_commands) > 0 and timed_commands[0][0] <= current_seconds:
         timed_command = timed_commands.pop(0)
         timed_command[1]()
 
