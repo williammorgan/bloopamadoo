@@ -106,6 +106,51 @@ class Noise:
     def render(self, time_in_seconds, frequency):
         return random.uniform(-1.0, 1.0)
 
+class Writer:
+    def __init__(self, samples_per_second):
+        self.samples_per_second = samples_per_second
+        self.timed_commands = []
+        self.voices = []
+
+    def add_command(self, time, command):
+        self.timed_commands.append((time, command))
+
+    def add_voice(self, voice):
+        self.voices.append(voice)
+
+    def write_output(self, filename):
+        final_data = bytearray()
+        self.timed_commands.sort(key = lambda a: a[0])
+        current_sample = 0
+        while len(self.timed_commands) > 0 or len(self.voices) > 0:
+            current_seconds = current_sample / 44100
+            while len(self.timed_commands) > 0 and self.timed_commands[0][0] <= current_seconds:
+                timed_command = self.timed_commands.pop(0)
+                timed_command[1]()
+
+            sample = 0.0
+            new_voices = []
+            for voice in self.voices:
+                try:
+                    sample += next(voice)
+                    new_voices.append(voice)
+                except StopIteration:
+                    pass
+            self.voices = new_voices
+
+            unitless = sample / 2.0 + .5
+            value = unitless * 255
+            trimmed = min(max(value, 0), 255)
+            final_data.append(int(trimmed))
+            current_sample += 1
+
+        wave_write = wave.open(filename, mode='wb')
+        wave_write.setnchannels(1)
+        wave_write.setframerate(samples_per_second)
+        wave_write.setsampwidth(1)
+        wave_write.writeframes(final_data)
+        wave_write.close()
+
 #notes = [0, 4, 7, 0 + 12, 4 + 12, 7 + 12, 24, 7 + 12, 4 + 12, 12, 7, 4]
 major_scale_notes = [0, 2, 4, 5, 7, 9, 11]
 major_triad = [0, 4, 7]
@@ -125,9 +170,7 @@ beat_pattern = [BassDrum, None,     None,     None,
 beat = beat_pattern * 2
 
 samples_per_second = 44100
-data = bytearray()
-timed_commands = []
-voices = []
+writer = Writer(samples_per_second)
 
 for i in range(len(beat)):
     if beat[i] is None:
@@ -135,13 +178,11 @@ for i in range(len(beat)):
     voice = Voice(beat[i](), samples_per_second)
     def note_on_command(voice = voice):
         voice.set_volume(0.1)
-        voices.append(voice)
-    timed_note_on_command = (i / 8.0, note_on_command)
-    timed_commands.append(timed_note_on_command)
+        writer.add_voice(voice)
+    writer.add_command(i / 8.0, note_on_command)
     def note_off_command(voice = voice):
         voice.release()
-    timed_note_off_command = ((i / 8.0) + (1.0 / 16.0), note_off_command)
-    timed_commands.append(timed_note_off_command)
+    writer.add_command((i / 8.0) + (1.0 / 16.0), note_off_command)
 
 for i in range(len(arpeggio_notes)):
     voice = Voice(Saw(), samples_per_second)
@@ -149,56 +190,21 @@ for i in range(len(arpeggio_notes)):
         voice.set_pitch(arpeggio_notes[i])
         voice.set_volume(.025)
         voice.adsr = adsr_generator(0.0001, 0.0001, 1.0, 0.0001, samples_per_second)
-        voices.append(voice)
-    timed_note_on_command = (i / 24.0, note_on_command)
-    timed_commands.append(timed_note_on_command)
+        writer.add_voice(voice)
+    writer.add_command(i / 24.0, note_on_command)
     def note_off_command(voice = voice):
         voice.release()
-    timed_note_off_command = ((i / 24.0) + (1.0 / 24.0), note_off_command)
-    timed_commands.append(timed_note_off_command)
+    writer.add_command((i / 24.0) + (1.0 / 24.0), note_off_command)
 
 for i in range(len(melody_notes)):
     voice = Voice(Saw(), samples_per_second)
     def note_on_command(voice = voice, i = i):
         voice.set_pitch(melody_notes[i])
         voice.set_volume(.05)
-        voices.append(voice)
-    timed_note_on_command = (i / 4.0, note_on_command)
-    timed_commands.append(timed_note_on_command)
+        writer.add_voice(voice)
+    writer.add_command(i / 4.0, note_on_command)
     def note_off_command(voice = voice):
         voice.release()
-    timed_note_off_command = ((i / 4.0) + (1.0 / 8.0), note_off_command)
-    timed_commands.append(timed_note_off_command)
+    writer.add_command((i / 4.0) + (1.0 / 8.0), note_off_command)
 
-timed_commands.sort(key = lambda a: a[0])
-
-current_sample = 0
-while len(timed_commands) > 0 or len(voices) > 0:
-    current_seconds = current_sample / 44100
-    while len(timed_commands) > 0 and timed_commands[0][0] <= current_seconds:
-        timed_command = timed_commands.pop(0)
-        timed_command[1]()
-
-    sample = 0.0
-    new_voices = []
-    for voice in voices:
-        try:
-            sample += next(voice)
-            new_voices.append(voice)
-        except StopIteration:
-            pass
-    voices = new_voices
-
-    unitless = sample / 2.0 + .5
-    value = unitless * 255
-    trimmed = min(max(value, 0), 255)
-    data.append(int(trimmed))
-    current_sample += 1
-
-wave_write = wave.open('billtest.wav', mode='wb')
-wave_write.setnchannels(1)
-wave_write.setframerate(samples_per_second)
-wave_write.setsampwidth(1)
-wave_write.writeframes(data)
-wave_write.close()
-
+writer.write_output('billtest.wav')
