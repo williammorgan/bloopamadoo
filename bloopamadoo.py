@@ -21,21 +21,46 @@ def lerp(a, b, t):
     """
     return a + (b-a) * t
 
-class Sine:
+class Waveform:
+    """
+    Classes derived from this represent primative waveforms
+    and are used by the voice class to render actual sounds.
+    """
+    def render(self, time_in_seconds, frequency):
+        """
+        Given a point in time measured in seconds and a frequency,
+        output the position of the speaker diaphram.
+        """
+        return NotImplementedError
+
+class Sine(Waveform):
+    """
+    A sinusoidal waveform that smoothly goes from 0 to 1 to -1 and back to 0.
+    It is like the y coordinate of a unit circle unwrapped couterclockwise.
+    """
     def render(self, time_in_seconds, frequency):
         return math.sin(math.pi * 2 * time_in_seconds * frequency)
 
-class Square:
-    def render(self, time_in_seconds, frequency):
-        from_zero_to_one = round(math.fmod(time_in_seconds * frequency, 1.0))
-        return from_zero_to_one * 2.0 - 1.0
-
-class Saw:
+class Saw(Waveform):
+    """
+    A waveform that ramps up to one value linearly but jumps back down.
+    """
     def render(self, time_in_seconds, frequency):
         from_zero_to_one = math.fmod(time_in_seconds * frequency, 1.0)
         return from_zero_to_one * 2.0 - 1.0
 
-class Noise:
+class Square(Waveform):
+    """
+    A waveform that jumps back and forth between two values discontinuously.
+    """
+    def render(self, time_in_seconds, frequency):
+        from_zero_to_one = round(math.fmod(time_in_seconds * frequency, 1.0))
+        return from_zero_to_one * 2.0 - 1.0
+
+class Noise(Waveform):
+    """
+    White noise, jumping discontinuously to random values with equal chance.
+    """
     def render(self, time_in_seconds, frequency):
         return random.uniform(-1.0, 1.0)
 
@@ -43,7 +68,7 @@ def adsr_generator(attack, decay, sustain, release, samples_per_second):
     """
     Returns a generator object that produces a series of values
     ramping over time from 0 to 1 to the sustain level and back to 0.
-    attack, decay, and release are measured in seconds.
+    attack, decay, and release are measured in seconds and cannot be 0.
     Send True to the generator to signal the note has been released.
     """
     value = 0.0
@@ -64,6 +89,10 @@ def adsr_generator(attack, decay, sustain, release, samples_per_second):
         yield value
 
 class Voice:
+    """
+    The Voice class produces samples to be consumed by the Writer.
+    It can accept calls to change it's parameters.
+    """
     def __init__(self, waveform, samples_per_second):
         self.waveform = waveform
         self.time_between_calls = 1.0 / samples_per_second
@@ -107,6 +136,16 @@ class Voice:
         return sample
 
 class Writer:
+    """
+    The writer mixes together samples from voices and writes them to a file.
+    While it goes through the voices, sample by sample, it will execute
+    commands added to it for specific times.  These commands can add more
+    voices, change their properties, etc.
+    When a voice runs out of samples and raises StopIteration, it is no
+    longer checked for samples.
+    
+    To use it, you load it up with commands and call write_output().
+    """
     def __init__(self, samples_per_second):
         self.samples_per_second = samples_per_second
         self.timed_commands = []

@@ -2,7 +2,7 @@ import bloopamadoo as bpmd
 import math
 
 # This is an example of a custom waveform made in the song file
-class BassDrum:
+class BassDrum(bpmd.Waveform):
     def render(self, time_in_seconds, frequency):
         frequency = 1.0 / (time_in_seconds / 100 + 0.0001)
         #from_zero_to_one = math.sin(math.pi * 2 * time_in_seconds * frequency)
