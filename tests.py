@@ -1,28 +1,28 @@
 import unittest
-import makewave
+import bloopamadoo
 
-class MakewaveTests(unittest.TestCase):
+class BloopamadooTests(unittest.TestCase):
     def test_mtof_middle_a(self):
-        self.assertEqual(makewave.mtof(69.0), 440.0)
+        self.assertEqual(bloopamadoo.mtof(69.0), 440.0)
 
     def test_mtof_middle_c(self):
-        self.assertAlmostEqual(makewave.mtof(60.0), 261.63, places = 2)
+        self.assertAlmostEqual(bloopamadoo.mtof(60.0), 261.63, places = 2)
 
     def test_ftom_middle_a(self):
-        self.assertEqual(makewave.ftom(440.0), 69.0)
+        self.assertEqual(bloopamadoo.ftom(440.0), 69.0)
 
     def test_ftom_middle_c(self):
-        self.assertAlmostEqual(makewave.ftom(261.63), 60.0, places = 2)
+        self.assertAlmostEqual(bloopamadoo.ftom(261.63), 60.0, places = 2)
 
     def test_lerp(self):
-        self.assertEqual(makewave.lerp(10, 20, -0.5), 5)
-        self.assertEqual(makewave.lerp(10, 20,  0.0), 10)
-        self.assertEqual(makewave.lerp(10, 20,  0.5), 15)
-        self.assertEqual(makewave.lerp(10, 20,  1.0), 20)
-        self.assertEqual(makewave.lerp(10, 20,  1.5), 25)
+        self.assertEqual(bloopamadoo.lerp(10, 20, -0.5), 5)
+        self.assertEqual(bloopamadoo.lerp(10, 20,  0.0), 10)
+        self.assertEqual(bloopamadoo.lerp(10, 20,  0.5), 15)
+        self.assertEqual(bloopamadoo.lerp(10, 20,  1.0), 20)
+        self.assertEqual(bloopamadoo.lerp(10, 20,  1.5), 25)
 
     def test_adsr(self):
-        adsr = makewave.adsr_generator(0.5, 0.5, 0.75, 0.5, 10)
+        adsr = bloopamadoo.adsr_generator(0.5, 0.5, 0.75, 0.5, 10)
         self.assertAlmostEqual(adsr.__next__(), 0.2,  places = 2)
         self.assertAlmostEqual(adsr.__next__(), 0.4,  places = 2)
         self.assertAlmostEqual(adsr.__next__(), 0.6,  places = 2)
@@ -43,7 +43,7 @@ class MakewaveTests(unittest.TestCase):
         with self.assertRaises(StopIteration):
             adsr.__next__()
 
-        adsr = makewave.adsr_generator(0.0001, 0.0001, 1.0, 0.0001, 10)
+        adsr = bloopamadoo.adsr_generator(0.0001, 0.0001, 1.0, 0.0001, 10)
         self.assertAlmostEqual(adsr.__next__(), 1.0,  places = 2)
 
 if __name__ == '__main__':
