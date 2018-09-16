@@ -5,13 +5,12 @@ import math
 class BassDrum:
     def render(self, time_in_seconds, frequency):
         frequency = 1.0 / (time_in_seconds / 100 + 0.0001)
-        #frequency = lerp(440, 10, time_in_seconds)
-        #return math.sin(math.pi * 2 * time_in_seconds * frequency)
+        #from_zero_to_one = math.sin(math.pi * 2 * time_in_seconds * frequency)
         from_zero_to_one = math.fmod(time_in_seconds * frequency, 1.0)
         return from_zero_to_one * 2.0 - 1.0
 
 # This might get moved into bloopamadoo if it proves reusable.
-def simple_sequence(notes, note_length, note_release,   volume, voice_maker, writer):
+def simple_sequence(notes, note_length, note_release, offset, volume, voice_maker, writer):
     for i in range(len(notes)):
         voice = voice_maker(i)
         if not voice or notes[i] is None:
@@ -20,10 +19,11 @@ def simple_sequence(notes, note_length, note_release,   volume, voice_maker, wri
             voice.set_pitch(notes[i])
             voice.set_volume(volume)
             writer.add_voice(voice)
-        writer.add_command(i * note_length, note_on_command)
+        note_start_time = offset + i * note_length
+        writer.add_command(note_start_time, note_on_command)
         def note_off_command(voice = voice):
             voice.release()
-        writer.add_command((i * note_length) + note_length * note_release, note_off_command)
+        writer.add_command(note_start_time + note_length * note_release, note_off_command)
 
 
 #notes = [0, 4, 7, 0 + 12, 4 + 12, 7 + 12, 24, 7 + 12, 4 + 12, 12, 7, 4]
@@ -38,8 +38,6 @@ melody_notes = major_scale_notes + [12, 14, 12] + major_scale_notes[::-1]
 arpeggio_notes = [x + root_note for x in arpeggio_notes]
 melody_notes = [x + root_note for x in melody_notes]
 
-bass = bpmd.BassDrum
-snare = bpmd.Noise
 beat_bass = [1,    None,  None,  None,
              None, None,  1,     1,
              1,    None,  1,     None,
@@ -64,9 +62,11 @@ def flat_adsr_saw_voice_maker(i):
     voice.adsr = bpmd.adsr_generator(0.0001, 0.0001, 1.0, 0.0001, samples_per_second)
     return voice
 
-simple_sequence(melody_notes, 0.25, 0.5, 0.25, simple_voice_maker_maker(bpmd.Saw), writer)
-simple_sequence(arpeggio_notes, 1.0/24.0, 1.0, 0.0625, flat_adsr_saw_voice_maker, writer)
-simple_sequence(beat_bass, 1/8.0, 1/16.0, 0.25, simple_voice_maker_maker(BassDrum), writer)
-simple_sequence(beat_snare, 1/8.0, 1/16.0, 0.25, simple_voice_maker_maker(bpmd.Noise), writer)
+simple_sequence(melody_notes, 0.25, 0.5, 0.0, 0.25, simple_voice_maker_maker(bpmd.Saw), writer)
+simple_sequence(arpeggio_notes, 1.0/24.0, 1.0, 0.0, 0.0625, flat_adsr_saw_voice_maker, writer)
+simple_sequence([x + 7 for x in arpeggio_notes], 1.0/24.0, 1.0, 2.0, 0.0625, flat_adsr_saw_voice_maker, writer)
+simple_sequence(arpeggio_notes, 1.0/24.0, 1.0, 4.0, 0.0625, flat_adsr_saw_voice_maker, writer)
+simple_sequence(beat_bass, 1/8.0, 1/16.0, 0.0, 0.25, simple_voice_maker_maker(BassDrum), writer)
+simple_sequence(beat_snare, 1/8.0, 1/16.0, 0.0, 0.25, simple_voice_maker_maker(bpmd.Noise), writer)
 
 writer.write_output('demo_song.wav')
