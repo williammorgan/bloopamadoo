@@ -1,5 +1,6 @@
 import bloopamadoo as bpmd
 import math
+import random
 
 # This is an example of a custom waveform made in the song file
 class BassDrum(bpmd.Waveform):
@@ -33,10 +34,16 @@ major_triad = [0, 4, 7]
 root_note = 69
 
 arpeggio_notes = major_triad * 6
+random.shuffle(major_scale_notes)
 melody_notes = major_scale_notes + [12, 14, 12] + major_scale_notes[::-1]
+bassline_notes = [0, None, None, None, 12, None, None, 0, 0, None, 0, None, 12, None, 0, None]
+bassline_notes = bassline_notes + [x + 7 if not x is None else None for x in bassline_notes] + [0]
+
 #make note numbers absoulute from the root, instead of relative.
 arpeggio_notes = [x + root_note for x in arpeggio_notes]
 melody_notes = [x + root_note for x in melody_notes]
+bassline_notes = [x + root_note - 24 if not x is None else None for x in bassline_notes]
+
 
 beat_bass = [1,    None,  None,  None,
              None, None,  1,     1,
@@ -66,6 +73,7 @@ simple_sequence(melody_notes, 0.25, 0.5, 0.0, 0.25, simple_voice_maker_maker(bpm
 simple_sequence(arpeggio_notes, 1.0/24.0, 1.0, 0.0, 0.0625, flat_adsr_saw_voice_maker, writer)
 simple_sequence([x + 7 for x in arpeggio_notes], 1.0/24.0, 1.0, 2.0, 0.0625, flat_adsr_saw_voice_maker, writer)
 simple_sequence(arpeggio_notes, 1.0/24.0, 1.0, 4.0, 0.0625, flat_adsr_saw_voice_maker, writer)
+simple_sequence(bassline_notes, 0.125, 0.5, 0.0, 0.25, simple_voice_maker_maker(bpmd.Square), writer)
 simple_sequence(beat_bass, 1/8.0, 1/16.0, 0.0, 0.25, simple_voice_maker_maker(BassDrum), writer)
 simple_sequence(beat_snare, 1/8.0, 1/16.0, 0.0, 0.25, simple_voice_maker_maker(bpmd.Noise), writer)
 
