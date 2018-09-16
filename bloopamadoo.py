@@ -92,6 +92,9 @@ class Voice:
     def stop(self):
         self.stopped = True
 
+    def __iter__(self):
+        return self
+
     def __next__(self):
         if self.stopped:
             raise StopIteration
