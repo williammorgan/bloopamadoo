@@ -21,6 +21,24 @@ def lerp(a, b, t):
     """
     return a + (b-a) * t
 
+class Sine:
+    def render(self, time_in_seconds, frequency):
+        return math.sin(math.pi * 2 * time_in_seconds * frequency)
+
+class Square:
+    def render(self, time_in_seconds, frequency):
+        from_zero_to_one = round(math.fmod(time_in_seconds * frequency, 1.0))
+        return from_zero_to_one * 2.0 - 1.0
+
+class Saw:
+    def render(self, time_in_seconds, frequency):
+        from_zero_to_one = math.fmod(time_in_seconds * frequency, 1.0)
+        return from_zero_to_one * 2.0 - 1.0
+
+class Noise:
+    def render(self, time_in_seconds, frequency):
+        return random.uniform(-1.0, 1.0)
+
 def adsr_generator(attack, decay, sustain, release, samples_per_second):
     """
     Returns a generator object that produces a series of values
@@ -58,14 +76,19 @@ class Voice:
 
     def set_volume(self, volume):
         self.volume = volume
+
     def change_volume(self, delta):
         self.volume += delta
+
     def set_pitch(self, midi_note_number):
         self.midi_note_number = midi_note_number
+
     def change_pitch(self, delta):
         self.midi_note_number += delta
+
     def release(self):
         self.released = True
+
     def stop(self):
         self.stopped = True
 
@@ -79,32 +102,6 @@ class Voice:
 
         self.time_in_seconds += self.time_between_calls
         return sample
-
-class Sine:
-    def render(self, time_in_seconds, frequency):
-        return math.sin(math.pi * 2 * time_in_seconds * frequency)
-
-class Square:
-    def render(self, time_in_seconds, frequency):
-        from_zero_to_one = round(math.fmod(time_in_seconds * frequency, 1.0))
-        return from_zero_to_one * 2.0 - 1.0
-
-class Saw:
-    def render(self, time_in_seconds, frequency):
-        from_zero_to_one = math.fmod(time_in_seconds * frequency, 1.0)
-        return from_zero_to_one * 2.0 - 1.0
-
-class BassDrum:
-    def render(self, time_in_seconds, frequency):
-        frequency = 1.0 / (time_in_seconds / 100 + 0.0001)
-        #frequency = lerp(440, 10, time_in_seconds)
-        #return math.sin(math.pi * 2 * time_in_seconds * frequency)
-        from_zero_to_one = math.fmod(time_in_seconds * frequency, 1.0)
-        return from_zero_to_one * 2.0 - 1.0
-
-class Noise:
-    def render(self, time_in_seconds, frequency):
-        return random.uniform(-1.0, 1.0)
 
 class Writer:
     def __init__(self, samples_per_second):
