@@ -27,14 +27,13 @@ def simple_sequence(notes, note_length, note_release, offset, volume, voice_make
         writer.add_command(note_start_time + note_length * note_release, note_off_command)
 
 
-#notes = [0, 4, 7, 0 + 12, 4 + 12, 7 + 12, 24, 7 + 12, 4 + 12, 12, 7, 4]
 major_scale_notes = [0, 2, 4, 5, 7, 9, 11]
 major_triad = [0, 4, 7]
-#notes = [0, 2, 3, 5, 7]
 root_note = 69
 
 arpeggio_notes = major_triad * 6
-random.shuffle(major_scale_notes)
+#arpeggio_notes = [0, 4, 7, 0 + 12, 4 + 12, 7 + 12, 24, 7 + 12, 4 + 12, 12, 7, 4] * 4
+#random.shuffle(major_scale_notes)
 melody_notes = major_scale_notes + [12, 14, 12] + major_scale_notes[::-1]
 bassline_notes = [0, None, None, None, 12, None, None, 0, 0, None, 0, None, 12, None, 0, None]
 bassline_notes = bassline_notes + [x + 7 if not x is None else None for x in bassline_notes] + [0]
@@ -42,7 +41,7 @@ bassline_notes = bassline_notes + [x + 7 if not x is None else None for x in bas
 #make note numbers absoulute from the root, instead of relative.
 arpeggio_notes = [x + root_note for x in arpeggio_notes]
 melody_notes = [x + root_note for x in melody_notes]
-bassline_notes = [x + root_note - 24 if not x is None else None for x in bassline_notes]
+bassline_notes = [x + root_note - 36 if not x is None else None for x in bassline_notes]
 
 
 beat_bass = [1,    None,  None,  None,
@@ -78,3 +77,4 @@ simple_sequence(beat_bass, 1/8.0, 1/16.0, 0.0, 0.25, simple_voice_maker_maker(Ba
 simple_sequence(beat_snare, 1/8.0, 1/16.0, 0.0, 0.25, simple_voice_maker_maker(bpmd.Noise), writer)
 
 writer.write_output('demo_song.wav')
+
