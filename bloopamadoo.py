@@ -177,16 +177,22 @@ class Writer:
                     pass
             self.voices = new_voices
 
-            unitless = sample / 2.0 + .5
-            value = unitless * 255
-            trimmed = min(max(value, 0), 255)
-            final_data.append(int(trimmed))
+            # the signal might have gone too big or small.  Clip it between -1 and 1.
+            trimmed = min(max(sample, -1), 1.0)
+
+            # 16-bit samples are stored as 2's-complement signed integers, ranging from -32768 to 32767.
+            as_int = int(trimmed * 32767.5 - 0.5)
+            bytes = as_int.to_bytes(2, byteorder='little', signed=True)
+
+            final_data.append(bytes[0])
+            final_data.append(bytes[1])
+
             current_sample += 1
 
         wave_write = wave.open(filename, mode='wb')
         wave_write.setnchannels(1)
         wave_write.setframerate(self.samples_per_second)
-        wave_write.setsampwidth(1)
+        wave_write.setsampwidth(2)
         wave_write.writeframes(final_data)
         wave_write.close()
 
