@@ -6,10 +6,24 @@ import random
 class BassDrum(bpmd.Waveform):
     def render(self, time_in_seconds, frequency):
         frequency = 1.0 / (time_in_seconds / 100 + 0.0001)
-        #from_zero_to_one = math.sin(math.pi * 2 * time_in_seconds * frequency)
+        #return math.sin(math.pi * 2 * time_in_seconds * frequency)
         from_zero_to_one = math.fmod(time_in_seconds * frequency, 1.0)
         return from_zero_to_one * 2.0 - 1.0
 
+# This is an example of a custom voice.
+class FilteredNoise(bpmd.Voice):
+    def __init__(self, samples_per_second):
+        super().__init__(bpmd.Noise(), samples_per_second)
+        self.history_size = 100
+        self.past_samples = [0] * self.history_size
+    def __next__(self):
+        sample = super().__next__()
+        self.past_samples.append(sample)
+        self.past_samples.pop(0)
+        num_samples = self.midi_note_number
+        return sum(self.past_samples[:self.history_size - num_samples:-1]) / num_samples
+
+# This is an example of a helper to load commands into the writer object.
 # This might get moved into bloopamadoo if it proves reusable.
 def simple_sequence(notes, note_length, note_release, offset, volume, voice_maker, writer):
     for i in range(len(notes)):
@@ -26,7 +40,7 @@ def simple_sequence(notes, note_length, note_release, offset, volume, voice_make
             voice.release()
         writer.add_command(note_start_time + note_length * note_release, note_off_command)
 
-
+# These are the notes used by the musical section
 major_scale_notes = [0, 2, 4, 5, 7, 9, 11]
 major_triad = [0, 4, 7]
 root_note = 69
@@ -68,13 +82,18 @@ def flat_adsr_saw_voice_maker(i):
     voice.adsr = bpmd.adsr_generator(0.0001, 0.0001, 1.0, 0.0001, samples_per_second)
     return voice
 
-simple_sequence(melody_notes, 0.25, 0.5, 0.0, 0.25, simple_voice_maker_maker(bpmd.Saw), writer)
-simple_sequence(arpeggio_notes, 1.0/24.0, 1.0, 0.0, 0.0625, flat_adsr_saw_voice_maker, writer)
-simple_sequence([x + 7 for x in arpeggio_notes], 1.0/24.0, 1.0, 2.0, 0.0625, flat_adsr_saw_voice_maker, writer)
-simple_sequence(arpeggio_notes, 1.0/24.0, 1.0, 4.0, 0.0625, flat_adsr_saw_voice_maker, writer)
-simple_sequence(bassline_notes, 0.125, 0.5, 0.0, 0.25, simple_voice_maker_maker(bpmd.Square), writer)
-simple_sequence(beat_bass, 1/8.0, 1/16.0, 0.0, 0.25, simple_voice_maker_maker(BassDrum), writer)
-simple_sequence(beat_snare, 1/8.0, 1/16.0, 0.0, 0.25, simple_voice_maker_maker(bpmd.Noise), writer)
+# intro sound effects
+simple_sequence(range(1,20), .25, 0.75, 0.0, 1.0, lambda i: FilteredNoise(writer.samples_per_second), writer)
+intro_over = 4.25
+
+#musical section
+simple_sequence(melody_notes, 0.25, 0.5, intro_over, 0.25, simple_voice_maker_maker(bpmd.Saw), writer)
+simple_sequence(arpeggio_notes, 1.0/24.0, 1.0, intro_over, 0.0625, flat_adsr_saw_voice_maker, writer)
+simple_sequence([x + 7 for x in arpeggio_notes], 1.0/24.0, 1.0, intro_over + 2.0, 0.0625, flat_adsr_saw_voice_maker, writer)
+simple_sequence(arpeggio_notes, 1.0/24.0, 1.0, intro_over + 4.0, 0.0625, flat_adsr_saw_voice_maker, writer)
+simple_sequence(bassline_notes, 0.125, 0.5, intro_over, 0.25, simple_voice_maker_maker(bpmd.Square), writer)
+simple_sequence(beat_bass, 1/8.0, 1/16.0, intro_over, 0.25, simple_voice_maker_maker(BassDrum), writer)
+simple_sequence(beat_snare, 1/8.0, 1/16.0, intro_over, 0.25, simple_voice_maker_maker(bpmd.Noise), writer)
 
 writer.write_output('demo_song.wav')
 
