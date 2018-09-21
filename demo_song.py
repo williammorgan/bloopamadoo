@@ -101,7 +101,10 @@ start_noise_beat = scale_section_over
 simple_sequence(range(1, 17), .25, 0.75, start_noise_beat, 1.0, lambda i: FilteredNoise(writer.samples_per_second), writer)
 beat_noise = [20, 99, 99, 99, 1, 0, 20, 99, 20, 99, 99, 99, 1, 99, 99, 99]*2
 simple_sequence(beat_noise, .25, 0.75, start_noise_beat + 4.0, 1.0, lambda i: FilteredNoise(writer.samples_per_second), writer)
-noise_beat_over = 4.0 + 8.0
+beat_noise_bass = [1, None, None, None, None, None, 1, None, 1, None, None, None, None, None, None, None]
+simple_sequence(beat_noise_bass, .25, 0.75, start_noise_beat + 8.0, 1.0, simple_voice_maker_maker(BassDrum), writer)
+noise_beat_over = start_noise_beat + 12.0
+
 
 writer.write_output('demo_song.wav')
 
