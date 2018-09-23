@@ -42,6 +42,30 @@ def simple_sequence(notes, note_length, note_release, offset, volume, voice_make
             voice.release()
         writer.add_command(note_start_time + note_length * note_release, note_off_command)
 
+def simple_sequence_slide(notes, note_length, slide_begin, offset, volume, voice_maker, writer):
+    # the number of times a pitch will change durring a slide:
+    num_changes = 100
+    bend_length = note_length * (1 - slide_begin)
+
+    voice = voice_maker(0);
+    def note_on_command():
+        voice.set_pitch(notes[0])
+        writer.add_voice(voice)
+    writer.add_command(offset, note_on_command)
+    for i in range(1, len(notes)):
+        note_start = offset + note_length * (i - 1)
+        bend_start = note_start + note_length * slide_begin
+        for j in range(1, num_changes + 1):
+            def pitch_command(i = i, j = j):
+                pitch = bpmd.lerp(notes[i - 1], notes[i], j / num_changes)
+                voice.set_pitch(pitch)
+            writer.add_command(bend_start + bend_length * (j / num_changes), pitch_command)
+
+    def finish_up():
+        voice.release()
+    writer.add_command(offset + note_length * len(notes) - bend_length, finish_up)
+
+
 # These are the notes used by the scale section
 major_scale_notes = [0, 2, 4, 5, 7, 9, 11]
 major_triad = [0, 4, 7]
@@ -86,6 +110,7 @@ def flat_adsr_saw_voice_maker(i):
 
 # scale section
 start_scale_section = 0.0
+#simple_sequence_slide(melody_notes, 0.25, 0.95, start_scale_section, 0.25, simple_voice_maker_maker(bpmd.Sine), writer)
 simple_sequence(melody_notes, 0.25, 0.5, start_scale_section, 0.25, simple_voice_maker_maker(bpmd.Saw), writer)
 simple_sequence(arpeggio_notes, 1.0/24.0, 1.0, start_scale_section, 0.0625, flat_adsr_saw_voice_maker, writer)
 simple_sequence([x + 7 for x in arpeggio_notes], 1.0/24.0, 1.0, start_scale_section + 2.0, 0.0625, flat_adsr_saw_voice_maker, writer)
@@ -104,24 +129,8 @@ beat_noise_bass = [1, None, None, None, None, None, 1, None, 1, None, None, None
 simple_sequence(beat_noise_bass, .25, 0.75, start_noise_beat + 8.0, 1.0, simple_voice_maker_maker(BassDrum), writer)
 noise_beat_over = start_noise_beat + 12.0
 
-def slide_note(start_pitch, end_pitch, duration, start_time, writer):
-    voice = bpmd.Triangle(writer.samples_per_second);
-    def note_on_command():
-        voice.set_pitch(start_pitch)
-        writer.add_voice(voice)
-    writer.add_command(start_time-duration, note_on_command)
-
-    num_changes = 101
-    for i in range(num_changes):
-        def pitch_command(i = i):
-            voice.set_pitch(bpmd.lerp(start_pitch, end_pitch, i / float(num_changes - 1)))
-        writer.add_command(start_time + duration * (i / float(num_changes - 1)), pitch_command)
-
-    def finish_up():
-        voice.release()
-    writer.add_command(start_time + duration + duration, finish_up)
-
-slide_note(root_note - 12 * 4, root_note, 3 * 0.25, noise_beat_over - 3 * 0.25, writer)
+simple_sequence_slide([root_note - 12 * 4, root_note], 1.5, 0.5, noise_beat_over - 3 * 0.25, 1.0, simple_voice_maker_maker(bpmd.Saw), writer)
+simple_sequence_slide([root_note + 12 * 4, root_note + 7], 1.5, 0.5, noise_beat_over - 3 * 0.25, 1.0, simple_voice_maker_maker(bpmd.Saw), writer)
 
 writer.write_output('demo_song.wav')
 
