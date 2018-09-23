@@ -99,12 +99,50 @@ scale_section_over = start_scale_section + 4.0
 # noise_beat_section
 start_noise_beat = scale_section_over
 simple_sequence(range(1, 17), .25, 0.75, start_noise_beat, 1.0, lambda i: FilteredNoise(writer.samples_per_second), writer)
-beat_noise = [20, 99, 99, 99, 1, 0, 20, 99, 20, 99, 99, 99, 1, 99, 99, 99]*2
-simple_sequence(beat_noise, .25, 0.75, start_noise_beat + 4.0, 1.0, lambda i: FilteredNoise(writer.samples_per_second), writer)
-beat_noise_bass = [1, None, None, None, None, None, 1, None, 1, None, None, None, None, None, None, None]
-simple_sequence(beat_noise_bass, .25, 0.75, start_noise_beat + 8.0, 1.0, simple_voice_maker_maker(BassDrum), writer)
+beat_noise = [20, 99, 99, 99, 1, 0, 20, 99, 20, 99, 99, 99, 1, 99, 99, 99]*3
+#simple_sequence(beat_noise, .25, 0.75, start_noise_beat + 4.0, 1.0, lambda i: FilteredNoise(writer.samples_per_second), writer)
+beat_noise_bass = [1, None, None, None, None, None, 1, None, 1, None, None, None, None, None, None, None]*2
+#simple_sequence(beat_noise_bass, .25, 0.75, start_noise_beat + 8.0, 1.0, simple_voice_maker_maker(BassDrum), writer)
 noise_beat_over = start_noise_beat + 12.0
 
+class NewSine(bpmd.Sine):
+
+    #sine
+    table = [math.sin(i / 44100 * 2 * math.pi) for i in range(0, 44100)]
+    #saw
+    #table = [i / 44100 for i in range(0, 44100)]
+    #triangle
+    #table = [i / 22050 if i <= 22050 else 1 - (i - 22050) / 22050 for i in range(0, 44100)]
+    #square
+    #table = [round(i / 44100) for i in range(0, 44100)]
+
+    def __init__(self):
+        self.current_phase = 0
+
+    def render(self, time_in_seconds, frequency):
+        value = self.table[int(self.current_phase)]
+        rate = len(self.table) * frequency / writer.samples_per_second
+        self.current_phase = math.fmod((self.current_phase + rate), len(self.table))
+        return value
+
+def slide_note(start_pitch, end_pitch, duration, start_time, writer):
+    voice = bpmd.Voice(NewSine(), writer.samples_per_second);
+    def note_on_command():
+        voice.set_pitch(start_pitch)
+        writer.add_voice(voice)
+    writer.add_command(start_time-duration, note_on_command)
+
+    num_changes = 101
+    for i in range(num_changes):
+        def pitch_command(i = i):
+            voice.set_pitch(bpmd.lerp(start_pitch, end_pitch, i / float(num_changes - 1)))
+        writer.add_command(start_time + duration * (i / float(num_changes - 1)), pitch_command)
+
+    def finish_up():
+        voice.release()
+    writer.add_command(start_time + duration + duration, finish_up)
+
+slide_note(root_note - 12 * 4, root_note, 3 * 0.25, noise_beat_over - 3 * 0.25, writer)
 
 writer.write_output('demo_song.wav')
 
