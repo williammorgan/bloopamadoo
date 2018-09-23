@@ -2,25 +2,24 @@ import bloopamadoo as bpmd
 import math
 import random
 
-# This is an example of a custom waveform made in the song file
-class BassDrum(bpmd.Waveform):
-    def render(self, time_in_seconds, frequency):
-        frequency = 1.0 / (time_in_seconds / 100 + 0.0001)
-        #return math.sin(math.pi * 2 * time_in_seconds * frequency)
-        from_zero_to_one = math.fmod(time_in_seconds * frequency, 1.0)
+# These are examples of custom voices made in the song file
+class BassDrum(bpmd.TimedVoice):
+    def get_sample(self):
+        frequency = 1.0 / (self.time_in_seconds / 100 + 0.0001)
+        #return math.sin(math.pi * 2 * self.time_in_seconds * frequency)
+        from_zero_to_one = math.fmod(self.time_in_seconds * frequency, 1.0)
         return from_zero_to_one * 2.0 - 1.0
 
-# This is an example of a custom voice.
-class FilteredNoise(bpmd.Voice):
+class FilteredNoise(bpmd.Noise):
     def __init__(self, samples_per_second):
-        super().__init__(bpmd.Noise(), samples_per_second)
+        super().__init__(samples_per_second)
         self.history_size = 100
         self.past_samples = [0] * self.history_size
     def __next__(self):
         sample = super().__next__()
         self.past_samples.append(sample)
         self.past_samples.pop(0)
-        num_samples = self.midi_note_number
+        num_samples = self.pitch
         if num_samples:
             return sum(self.past_samples[-num_samples:]) / num_samples
         else:
@@ -75,13 +74,13 @@ beat_snare = beat_snare * 2
 samples_per_second = 44100
 writer = bpmd.Writer(samples_per_second)
 
-def simple_voice_maker_maker(waveform):
+def simple_voice_maker_maker(voice_class):
     def voice_maker(i):
-        return bpmd.Voice(waveform(), writer.samples_per_second)
+        return voice_class(writer.samples_per_second)
     return voice_maker
 
 def flat_adsr_saw_voice_maker(i):
-    voice = bpmd.Voice(bpmd.Saw(), writer.samples_per_second)
+    voice = bpmd.Saw(writer.samples_per_second)
     voice.adsr = bpmd.adsr_generator(0.0001, 0.0001, 1.0, 0.0001, samples_per_second)
     return voice
 
@@ -100,33 +99,13 @@ scale_section_over = start_scale_section + 4.0
 start_noise_beat = scale_section_over
 simple_sequence(range(1, 17), .25, 0.75, start_noise_beat, 1.0, lambda i: FilteredNoise(writer.samples_per_second), writer)
 beat_noise = [20, 99, 99, 99, 1, 0, 20, 99, 20, 99, 99, 99, 1, 99, 99, 99]*3
-#simple_sequence(beat_noise, .25, 0.75, start_noise_beat + 4.0, 1.0, lambda i: FilteredNoise(writer.samples_per_second), writer)
+simple_sequence(beat_noise, .25, 0.75, start_noise_beat + 4.0, 1.0, lambda i: FilteredNoise(writer.samples_per_second), writer)
 beat_noise_bass = [1, None, None, None, None, None, 1, None, 1, None, None, None, None, None, None, None]*2
-#simple_sequence(beat_noise_bass, .25, 0.75, start_noise_beat + 8.0, 1.0, simple_voice_maker_maker(BassDrum), writer)
+simple_sequence(beat_noise_bass, .25, 0.75, start_noise_beat + 8.0, 1.0, simple_voice_maker_maker(BassDrum), writer)
 noise_beat_over = start_noise_beat + 12.0
 
-class NewSine(bpmd.Sine):
-
-    #sine
-    table = [math.sin(i / 44100 * 2 * math.pi) for i in range(0, 44100)]
-    #saw
-    #table = [i / 44100 for i in range(0, 44100)]
-    #triangle
-    #table = [i / 22050 if i <= 22050 else 1 - (i - 22050) / 22050 for i in range(0, 44100)]
-    #square
-    #table = [round(i / 44100) for i in range(0, 44100)]
-
-    def __init__(self):
-        self.current_phase = 0
-
-    def render(self, time_in_seconds, frequency):
-        value = self.table[int(self.current_phase)]
-        rate = len(self.table) * frequency / writer.samples_per_second
-        self.current_phase = math.fmod((self.current_phase + rate), len(self.table))
-        return value
-
 def slide_note(start_pitch, end_pitch, duration, start_time, writer):
-    voice = bpmd.Voice(NewSine(), writer.samples_per_second);
+    voice = bpmd.Triangle(writer.samples_per_second);
     def note_on_command():
         voice.set_pitch(start_pitch)
         writer.add_voice(voice)

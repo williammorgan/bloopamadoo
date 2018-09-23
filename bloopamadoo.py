@@ -21,48 +21,11 @@ def lerp(a, b, t):
     """
     return a + (b-a) * t
 
-class Waveform:
+def center(sample_from_zero_to_one):
     """
-    Classes derived from this represent primative waveforms
-    and are used by the voice class to render actual sounds.
+    Take a sample in the range 0 to 1 and centers it to the range -1 to 1
     """
-    def render(self, time_in_seconds, frequency):
-        """
-        Given a point in time measured in seconds and a frequency,
-        output the position of the speaker diaphram.
-        """
-        return NotImplementedError
-
-class Sine(Waveform):
-    """
-    A sinusoidal waveform that smoothly goes from 0 to 1 to -1 and back to 0.
-    It is like the y coordinate of a unit circle unwrapped couterclockwise.
-    """
-    def render(self, time_in_seconds, frequency):
-        return math.sin(math.pi * 2 * time_in_seconds * frequency)
-
-class Saw(Waveform):
-    """
-    A waveform that ramps up to one value linearly but jumps back down.
-    """
-    def render(self, time_in_seconds, frequency):
-        from_zero_to_one = math.fmod(time_in_seconds * frequency, 1.0)
-        return from_zero_to_one * 2.0 - 1.0
-
-class Square(Waveform):
-    """
-    A waveform that jumps back and forth between two values discontinuously.
-    """
-    def render(self, time_in_seconds, frequency):
-        from_zero_to_one = round(math.fmod(time_in_seconds * frequency, 1.0))
-        return from_zero_to_one * 2.0 - 1.0
-
-class Noise(Waveform):
-    """
-    White noise, jumping discontinuously to random values with equal chance.
-    """
-    def render(self, time_in_seconds, frequency):
-        return random.uniform(-1.0, 1.0)
+    return sample_from_zero_to_one * 2.0 - 1.0
 
 def adsr_generator(attack, decay, sustain, release, samples_per_second):
     """
@@ -91,16 +54,13 @@ def adsr_generator(attack, decay, sustain, release, samples_per_second):
 class Voice:
     """
     The Voice class produces samples to be consumed by the Writer.
-    It can accept calls to change it's parameters.
+    It can accept calls to change it's volume and pitch parameters, or to stop it.
     """
-    def __init__(self, waveform, samples_per_second):
-        self.waveform = waveform
-        self.time_between_calls = 1.0 / samples_per_second
-        self.time_in_seconds = 0.0
+
+    def __init__(self, samples_per_second):
+        self.samples_per_second = samples_per_second
         self.volume = 1.0
-        self.midi_note_number = 69
-        self.adsr = adsr_generator(0.01, 0.01, 0.75, 0.1, samples_per_second)
-        self.released = None
+        self.set_pitch(69)
         self.stopped = False
 
     def set_volume(self, volume):
@@ -110,16 +70,20 @@ class Voice:
         self.volume += delta
 
     def set_pitch(self, midi_note_number):
-        self.midi_note_number = midi_note_number
+        self.frequency = mtof(midi_note_number)
+        self.pitch = midi_note_number
 
     def change_pitch(self, delta):
-        self.midi_note_number += delta
-
-    def release(self):
-        self.released = True
+        self.set_pitch(self.pitch + delta)
 
     def stop(self):
         self.stopped = True
+
+    def get_sample(self):
+        """
+        Derived classes should implement this function to produce sound.
+        """
+        raise NotImplementedError
 
     def __iter__(self):
         return self
@@ -127,13 +91,91 @@ class Voice:
     def __next__(self):
         if self.stopped:
             raise StopIteration
-        frequency = mtof(self.midi_note_number)
-        sample = self.waveform.render(self.time_in_seconds, frequency)
+        sample = self.get_sample()
         sample *= self.volume
-        sample *= self.adsr.send(self.released)
+        return sample
 
+class AdsrVoice(Voice):
+    """
+    Modifies the volume of a voice's samples using an ADSR Envelope.
+    """
+    def __init__(self, samples_per_second):
+        super().__init__(samples_per_second)
+        self.adsr = adsr_generator(0.01, 0.01, 0.75, 0.1, samples_per_second)
+        self.released = None
+
+    def release(self):
+        self.released = True
+
+    def __next__(self):
+        sample = super().__next__()
+        sample *= self.adsr.send(self.released)
+        return sample
+
+class TimedVoice(AdsrVoice):
+    """
+    Keeps track of the time since the voice started playing.
+    """
+    def __init__(self, samples_per_second):
+        super().__init__(samples_per_second)
+        self.time_between_calls = 1.0 / samples_per_second
+        self.time_in_seconds = 0.0
+
+    def __next__(self):
+        sample = super().__next__()
         self.time_in_seconds += self.time_between_calls
         return sample
+
+class TableVoice(AdsrVoice):
+    """
+    Uses a table to represent one period of the waveform and
+    keeps the current phase offset, so that changes to the pitch
+    can be made without causing discontinuities in the output.
+    """
+    # To be overwritten with a waveform shape in derived classes.
+    table = [0]
+
+    def __init__(self, samples_per_second):
+        super().__init__(samples_per_second)
+        self.current_phase = 0
+
+    def get_sample(self):
+        value = self.table[int(self.current_phase)]
+        rate = len(self.table) * self.frequency / self.samples_per_second
+        self.current_phase = math.fmod(self.current_phase + rate, len(self.table))
+        return value
+
+class Sine(TableVoice):
+    """
+    A sinusoidal waveform that smoothly goes from 0 to 1 to -1 and back to 0.
+    It is like the y coordinate of a unit circle unwrapped couterclockwise.
+    """
+    table = [math.sin(i / 44100 * 2 * math.pi) for i in range(0, 44100)]
+
+class Saw(TableVoice):
+    """
+    A waveform that ramps up to one value linearly but jumps back down.
+    """
+    table = [center(i / 44100) for i in range(0, 44100)]
+
+class Square(TableVoice):
+    """
+    A waveform that jumps back and forth between two values discontinuously.
+    """
+    table = [center(round(i / 44100)) for i in range(0, 44100)]
+
+class Triangle(TableVoice):
+    """
+    A waveform that ramps linearly back and forth between two values.
+    """
+    table = [center(i / 22050 if i <= 22050 else 1 - (i - 22050) / 22050) for i in range(0, 44100)]
+
+class Noise(AdsrVoice):
+    """
+    White noise, jumping discontinuously to random values with equal chance.
+    """
+    def get_sample(self):
+        return random.uniform(-1.0, 1.0)
 
 class Writer:
     """
@@ -143,7 +185,7 @@ class Writer:
     voices, change their properties, etc.
     When a voice runs out of samples and raises StopIteration, it is no
     longer checked for samples.
-    
+
     To use it, you load it up with commands and call write_output().
     """
     def __init__(self, samples_per_second):
