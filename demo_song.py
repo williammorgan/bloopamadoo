@@ -50,6 +50,7 @@ def simple_sequence_slide(notes, note_length, slide_begin, offset, volume, voice
     voice = voice_maker(0);
     def note_on_command():
         voice.set_pitch(notes[0])
+        voice.set_volume(volume)
         writer.add_voice(voice)
     writer.add_command(offset, note_on_command)
     for i in range(1, len(notes)):
@@ -109,7 +110,7 @@ def flat_adsr_saw_voice_maker(i):
     return voice
 
 # scale section
-start_scale_section = 0.0
+start_scale_section = 10.0
 #simple_sequence_slide(melody_notes, 0.25, 0.95, start_scale_section, 0.25, simple_voice_maker_maker(bpmd.Sine), writer)
 simple_sequence(melody_notes, 0.25, 0.5, start_scale_section, 0.25, simple_voice_maker_maker(bpmd.Saw), writer)
 simple_sequence(arpeggio_notes, 1.0/24.0, 1.0, start_scale_section, 0.0625, flat_adsr_saw_voice_maker, writer)
@@ -129,8 +130,9 @@ beat_noise_bass = [1, None, None, None, None, None, 1, None, 1, None, None, None
 simple_sequence(beat_noise_bass, .25, 0.75, start_noise_beat + 8.0, 1.0, simple_voice_maker_maker(BassDrum), writer)
 noise_beat_over = start_noise_beat + 12.0
 
-simple_sequence_slide([root_note - 12 * 4, root_note], 1.5, 0.5, noise_beat_over - 3 * 0.25, 1.0, simple_voice_maker_maker(bpmd.Saw), writer)
-simple_sequence_slide([root_note + 12 * 4, root_note + 7], 1.5, 0.5, noise_beat_over - 3 * 0.25, 1.0, simple_voice_maker_maker(bpmd.Saw), writer)
+start_slides = 0.0
+simple_sequence_slide([root_note - 12 * 4, root_note], 5, 0.25, start_slides, .25, simple_voice_maker_maker(bpmd.Sine), writer)
+simple_sequence_slide([root_note + 12 * 4, root_note + 7], 5, 0.25, start_slides, .25, simple_voice_maker_maker(bpmd.Sine), writer)
 
 writer.write_output('demo_song.wav')
 
