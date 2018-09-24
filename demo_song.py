@@ -25,6 +25,29 @@ class FilteredNoise(bpmd.Noise):
         else:
             return 0.0
 
+class SimpleEcho(bpmd.Voice):
+    def __init__(self, samples_per_second, echo_delay):
+        super().__init__(samples_per_second)
+        self.history_size = int(samples_per_second * echo_delay)
+        self.past_samples = [0] * self.history_size
+    def __next__(self):
+        try:
+            sample = super().__next__()
+        except StopIteration:
+            sample = None
+        self.past_samples.append(sample)
+        old_sample = self.past_samples.pop(0)
+        if old_sample is None:
+            raise StopIteration
+        else:
+            if sample is None:
+                sample = 0
+            return sample + old_sample * 0.5
+
+class EchoSine(SimpleEcho, bpmd.Sine):
+    def __init__(self, samples_per_second):
+        super().__init__(samples_per_second, 0.125)
+
 # This is an example of a helper to load commands into the writer object.
 # This might get moved into bloopamadoo if it proves reusable.
 def simple_sequence(notes, note_length, note_release, offset, volume, voice_maker, writer):
@@ -109,9 +132,13 @@ def flat_adsr_saw_voice_maker(i):
     voice.adsr = bpmd.adsr_generator(0.0001, 0.0001, 1.0, 0.0001, samples_per_second)
     return voice
 
+#portamento and vibrato sinewave section
+start_slides = 0.0
+simple_sequence_slide(arpeggio_notes, 0.25, 0.95, start_slides, 0.25, simple_voice_maker_maker(EchoSine), writer)
+end_slides = len(arpeggio_notes) * 0.25 + 0.5
+
 # scale section
-start_scale_section = 10.0
-#simple_sequence_slide(melody_notes, 0.25, 0.95, start_scale_section, 0.25, simple_voice_maker_maker(bpmd.Sine), writer)
+start_scale_section = end_slides
 simple_sequence(melody_notes, 0.25, 0.5, start_scale_section, 0.25, simple_voice_maker_maker(bpmd.Saw), writer)
 simple_sequence(arpeggio_notes, 1.0/24.0, 1.0, start_scale_section, 0.0625, flat_adsr_saw_voice_maker, writer)
 simple_sequence([x + 7 for x in arpeggio_notes], 1.0/24.0, 1.0, start_scale_section + 2.0, 0.0625, flat_adsr_saw_voice_maker, writer)
@@ -130,9 +157,6 @@ beat_noise_bass = [1, None, None, None, None, None, 1, None, 1, None, None, None
 simple_sequence(beat_noise_bass, .25, 0.75, start_noise_beat + 8.0, 1.0, simple_voice_maker_maker(BassDrum), writer)
 noise_beat_over = start_noise_beat + 12.0
 
-start_slides = 0.0
-simple_sequence_slide([root_note - 12 * 4, root_note], 5, 0.25, start_slides, .25, simple_voice_maker_maker(bpmd.Sine), writer)
-simple_sequence_slide([root_note + 12 * 4, root_note + 7], 5, 0.25, start_slides, .25, simple_voice_maker_maker(bpmd.Sine), writer)
 
 writer.write_output('demo_song.wav')
 
