@@ -2,17 +2,20 @@ import wave
 import math
 import random
 
+
 def mtof(midi_note_number):
     """
     Turns midi note number into frequency
     """
-    return 440.0 * pow(2, (midi_note_number - 69) / 12);
+    return 440.0 * pow(2, (midi_note_number - 69) / 12)
+
 
 def ftom(frequency):
     """
     Turns frequency into midi note number
     """
     return 69 + 12 * math.log(frequency / 440.0, 2)
+
 
 def lerp(a, b, t):
     """
@@ -21,11 +24,13 @@ def lerp(a, b, t):
     """
     return a + (b-a) * t
 
+
 def center(sample_from_zero_to_one):
     """
     Take a sample in the range 0 to 1 and centers it to the range -1 to 1
     """
     return sample_from_zero_to_one * 2.0 - 1.0
+
 
 def adsr_generator(attack, decay, sustain, release, samples_per_second):
     """
@@ -51,10 +56,11 @@ def adsr_generator(attack, decay, sustain, release, samples_per_second):
         value = max(value - release_rate, 0.0)
         yield value
 
+
 class Voice:
     """
     The Voice class produces samples to be consumed by the Writer.
-    It can accept calls to change it's volume and pitch parameters, or to stop it.
+    It can accept calls to change it's volume and pitch parameters, or stop.
     """
 
     def __init__(self, samples_per_second):
@@ -95,6 +101,7 @@ class Voice:
         sample *= self.volume
         return sample
 
+
 class AdsrVoice(Voice):
     """
     Modifies the volume of a voice's samples using an ADSR Envelope.
@@ -112,6 +119,7 @@ class AdsrVoice(Voice):
         sample *= self.adsr.send(self.released)
         return sample
 
+
 class TimedVoice(AdsrVoice):
     """
     Keeps track of the time since the voice started playing.
@@ -125,6 +133,7 @@ class TimedVoice(AdsrVoice):
         sample = super().__next__()
         self.time_in_seconds += self.time_between_calls
         return sample
+
 
 class TableVoice(AdsrVoice):
     """
@@ -140,35 +149,53 @@ class TableVoice(AdsrVoice):
         self.current_phase = 0
 
     def get_sample(self):
+        table_len = len(self.table)
         value = self.table[int(self.current_phase)]
-        rate = len(self.table) * self.frequency / self.samples_per_second
-        self.current_phase = math.fmod(self.current_phase + rate, len(self.table))
+        rate = table_len * self.frequency / self.samples_per_second
+        self.current_phase = math.fmod(self.current_phase + rate, table_len)
         return value
+
 
 class Sine(TableVoice):
     """
     A sinusoidal waveform that smoothly goes from 0 to 1 to -1 and back to 0.
     It is like the y coordinate of a unit circle unwrapped couterclockwise.
     """
-    table = [math.sin(i / 44100 * 2 * math.pi) for i in range(0, 44100)]
+    table = [
+        math.sin(i / 44100 * 2 * math.pi)
+        for i in range(0, 44100)
+    ]
+
 
 class Saw(TableVoice):
     """
     A waveform that ramps up to one value linearly but jumps back down.
     """
-    table = [center(i / 44100) for i in range(0, 44100)]
+    table = [
+        center(i / 44100)
+        for i in range(0, 44100)
+    ]
+
 
 class Square(TableVoice):
     """
     A waveform that jumps back and forth between two values discontinuously.
     """
-    table = [center(round(i / 44100)) for i in range(0, 44100)]
+    table = [
+        center(round(i / 44100))
+        for i in range(0, 44100)
+    ]
+
 
 class Triangle(TableVoice):
     """
     A waveform that ramps linearly back and forth between two values.
     """
-    table = [center(i / 22050 if i <= 22050 else 1 - (i - 22050) / 22050) for i in range(0, 44100)]
+    table = [
+        center(i / 22050 if i <= 22050 else 1 - (i - 22050) / 22050)
+        for i in range(0, 44100)
+    ]
+
 
 class Noise(AdsrVoice):
     """
@@ -176,6 +203,7 @@ class Noise(AdsrVoice):
     """
     def get_sample(self):
         return random.uniform(-1.0, 1.0)
+
 
 class Writer:
     """
@@ -201,11 +229,12 @@ class Writer:
 
     def write_output(self, filename):
         final_data = bytearray()
-        self.timed_commands.sort(key = lambda a: a[0])
+        self.timed_commands.sort(key=lambda a: a[0])
         current_sample = 0
         while len(self.timed_commands) > 0 or len(self.voices) > 0:
             current_seconds = current_sample / 44100
-            while len(self.timed_commands) > 0 and self.timed_commands[0][0] <= current_seconds:
+            while len(self.timed_commands) > 0 and \
+                    self.timed_commands[0][0] <= current_seconds:
                 timed_command = self.timed_commands.pop(0)
                 timed_command[1]()
 
@@ -219,10 +248,12 @@ class Writer:
                     pass
             self.voices = new_voices
 
-            # the signal might have gone too big or small.  Clip it between -1 and 1.
+            # The signal might have gone too big or small.
+            # Clip it between -1 and 1.
             trimmed = min(max(sample, -1), 1.0)
 
-            # 16-bit samples are stored as 2's-complement signed integers, ranging from -32768 to 32767.
+            # 16-bit samples are stored as 2's-complement signed integers,
+            # ranging from -32768 to 32767.
             as_int = int(trimmed * 32767.5 - 0.5)
             bytes = as_int.to_bytes(2, byteorder='little', signed=True)
 
@@ -237,4 +268,3 @@ class Writer:
         wave_write.setsampwidth(2)
         wave_write.writeframes(final_data)
         wave_write.close()
-
