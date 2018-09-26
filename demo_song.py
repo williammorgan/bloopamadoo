@@ -1,6 +1,6 @@
 import bloopamadoo as bpmd
 import math
-
+import random
 
 # These are examples of custom voices made in the song file
 class BassDrum(bpmd.TimedVoice):
@@ -147,7 +147,7 @@ def flat_adsr_saw_voice_maker(i):
 start_section_slides = 0.0
 
 slide_pitches = [0, 4, 7, 12, 16, 19, 24, 19, 16, 12, 7, 4] * 2 + [0]
-slide_pitches = [x + 69 - 12 for x in slide_pitches]
+slide_pitches = [x + 69 for x in slide_pitches]
 simple_sequence_slide(
     pitches=slide_pitches,
     note_length=0.25,
@@ -167,8 +167,7 @@ major_triad = [0, 4, 7]
 root_pitch = 69
 
 arpeggio_pitches = major_triad * 6
-# It is fun to randomly shuffle it sometimes:
-# random.shuffle(major_scale_pitches)
+random.shuffle(major_scale_pitches)
 melody_pitches = major_scale_pitches + [12, 14, 12] + major_scale_pitches[::-1]
 bassline_pitches = [
     0, None, None, None, 12, None, None, 0,
