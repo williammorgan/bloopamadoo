@@ -196,13 +196,13 @@ end_section_slides = len(arpeggio_pitches) * 0.25 + 0.5
 # scale section
 start_section_scale = end_section_slides
 simple_sequence(
-    melody_pitches,
-    0.25,
-    0.5,
-    start_section_scale,
-    0.25,
-    simple_voice_maker_maker(bpmd.Saw),
-    writer
+    pitches=melody_pitches,
+    note_length=0.25,
+    note_release=0.5,
+    offset=start_section_scale,
+    volume=0.25,
+    voice_maker=simple_voice_maker_maker(bpmd.Saw),
+    writer=writer
 )
 simple_sequence(
     arpeggio_pitches,
