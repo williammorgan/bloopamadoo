@@ -122,7 +122,46 @@ def simple_sequence_slide(
     writer.add_command(release_time, note_off_command)
 
 
-# These are the pitches used by the scale section
+samples_per_second = 44100
+writer = bpmd.Writer(samples_per_second)
+
+
+def simple_voice_maker_maker(voice_class):
+    def voice_maker(i):
+        return voice_class(writer.samples_per_second)
+    return voice_maker
+
+
+def flat_adsr_saw_voice_maker(i):
+    voice = bpmd.Saw(writer.samples_per_second)
+    voice.adsr = bpmd.adsr_generator(
+        0.0001, 0.0001, 1.0, 0.0001,
+        samples_per_second
+    )
+    return voice
+
+
+###
+# Portamento and vibrato sinewave section
+###
+start_section_slides = 0.0
+
+slide_pitches = [0, 4, 7, 12, 16, 19, 24, 19, 16, 12, 7, 4] * 2 + [0]
+slide_pitches = [x + 69 - 12 for x in slide_pitches]
+simple_sequence_slide(
+    pitches=slide_pitches,
+    note_length=0.25,
+    slide_begin=0.95,
+    offset=start_section_slides,
+    volume=0.25,
+    voice_maker=simple_voice_maker_maker(EchoSine),
+    writer=writer
+)
+end_section_slides = len(slide_pitches) * 0.25 + 0.5
+
+###
+# scale section
+###
 major_scale_pitches = [0, 2, 4, 5, 7, 9, 11]
 major_triad = [0, 4, 7]
 root_pitch = 69
@@ -161,39 +200,6 @@ beat_snare = [None, None,  None,  None,
 beat_bass = beat_bass * 2
 beat_snare = beat_snare * 2
 
-samples_per_second = 44100
-writer = bpmd.Writer(samples_per_second)
-
-
-def simple_voice_maker_maker(voice_class):
-    def voice_maker(i):
-        return voice_class(writer.samples_per_second)
-    return voice_maker
-
-
-def flat_adsr_saw_voice_maker(i):
-    voice = bpmd.Saw(writer.samples_per_second)
-    voice.adsr = bpmd.adsr_generator(
-        0.0001, 0.0001, 1.0, 0.0001,
-        samples_per_second
-    )
-    return voice
-
-
-# portamento and vibrato sinewave section
-start_section_slides = 0.0
-simple_sequence_slide(
-    pitches=arpeggio_pitches,
-    note_length=0.25,
-    slide_begin=0.95,
-    offset=start_section_slides,
-    volume=0.25,
-    voice_maker=simple_voice_maker_maker(EchoSine),
-    writer=writer
-)
-end_section_slides = len(arpeggio_pitches) * 0.25 + 0.5
-
-# scale section
 start_section_scale = end_section_slides
 simple_sequence(
     pitches=melody_pitches,
@@ -260,7 +266,10 @@ simple_sequence(
 )
 end_section_scale = start_section_scale + 4.0
 
+###
 # noise_beat_section
+###
+
 start_section_noise = end_section_scale
 simple_sequence(
     range(1, 17),
