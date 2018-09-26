@@ -60,7 +60,14 @@ class EchoSine(SimpleEcho, bpmd.Sine):
 
 # This is an example of a helper to load commands into the writer object.
 # This might get moved into bloopamadoo if it proves reusable.
-def simple_sequence(pitches, note_length, note_release, offset, volume, voice_maker, writer):
+def simple_sequence(
+        pitches,
+        note_length,
+        note_release,
+        offset,
+        volume,
+        voice_maker,
+        writer):
     for i in range(len(pitches)):
         voice = voice_maker(i)
         if not voice or pitches[i] is None:
@@ -75,10 +82,18 @@ def simple_sequence(pitches, note_length, note_release, offset, volume, voice_ma
 
         def note_off_command(voice=voice):
             voice.release()
-        writer.add_command(note_start_time + note_length * note_release, note_off_command)
+        note_off_time = note_start_time + note_length * note_release
+        writer.add_command(note_off_time, note_off_command)
 
 
-def simple_sequence_slide(pitches, note_length, slide_begin, offset, volume, voice_maker, writer):
+def simple_sequence_slide(
+        pitches,
+        note_length,
+        slide_begin,
+        offset,
+        volume,
+        voice_maker,
+        writer):
     # the number of times a pitch will change durring a slide:
     num_changes = 100
     bend_length = note_length * (1 - slide_begin)
@@ -90,6 +105,7 @@ def simple_sequence_slide(pitches, note_length, slide_begin, offset, volume, voi
         voice.set_volume(volume)
         writer.add_voice(voice)
     writer.add_command(offset, note_on_command)
+
     for i in range(1, len(pitches)):
         note_start = offset + note_length * (i - 1)
         bend_start = note_start + note_length * slide_begin
@@ -97,11 +113,13 @@ def simple_sequence_slide(pitches, note_length, slide_begin, offset, volume, voi
             def pitch_command(i=i, j=j):
                 pitch = bpmd.lerp(pitches[i - 1], pitches[i], j / num_changes)
                 voice.set_pitch(pitch)
-            writer.add_command(bend_start + bend_length * (j / num_changes), pitch_command)
+            pitch_change_time = bend_start + bend_length * (j / num_changes)
+            writer.add_command(pitch_change_time, pitch_command)
 
-    def finish_up():
+    def note_off_command():
         voice.release()
-    writer.add_command(offset + note_length * len(pitches) - bend_length, finish_up)
+    release_time = offset + note_length * len(pitches) - bend_length
+    writer.add_command(release_time, note_off_command)
 
 
 # These are the pitches used by the scale section
@@ -110,16 +128,26 @@ major_triad = [0, 4, 7]
 root_pitch = 69
 
 arpeggio_pitches = major_triad * 6
-# arpeggio_pitches = [0, 4, 7, 0 + 12, 4 + 12, 7 + 12, 24, 7 + 12, 4 + 12, 12, 7, 4] * 4
+# It is fun to randomly shuffle it sometimes:
 # random.shuffle(major_scale_pitches)
 melody_pitches = major_scale_pitches + [12, 14, 12] + major_scale_pitches[::-1]
-bassline_pitches = [0, None, None, None, 12, None, None, 0, 0, None, 0, None, 12, None, 0, None]
-bassline_pitches = bassline_pitches + [x + 7 if x is not None else None for x in bassline_pitches] + [0]
+bassline_pitches = [
+    0, None, None, None, 12, None, None, 0,
+    0, None, 0, None, 12, None, 0, None
+]
+bassline_pitches += [
+    x + 7 if x is not None else None
+    for x in bassline_pitches
+]
+bassline_pitches += [0]
 
 # Make pitch numbers absoulute from the root, instead of relative.
 arpeggio_pitches = [x + root_pitch for x in arpeggio_pitches]
 melody_pitches = [x + root_pitch for x in melody_pitches]
-bassline_pitches = [x + root_pitch - 36 if x is not None else None for x in bassline_pitches]
+bassline_pitches = [
+    x + root_pitch - 36 if x is not None else None
+    for x in bassline_pitches
+]
 
 
 beat_bass = [1,    None,  None,  None,
