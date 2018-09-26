@@ -60,14 +60,14 @@ class EchoSine(SimpleEcho, bpmd.Sine):
 
 # This is an example of a helper to load commands into the writer object.
 # This might get moved into bloopamadoo if it proves reusable.
-def simple_sequence(notes, note_length, note_release, offset, volume, voice_maker, writer):
-    for i in range(len(notes)):
+def simple_sequence(pitches, note_length, note_release, offset, volume, voice_maker, writer):
+    for i in range(len(pitches)):
         voice = voice_maker(i)
-        if not voice or notes[i] is None:
+        if not voice or pitches[i] is None:
             continue
 
         def note_on_command(voice=voice, i=i):
-            voice.set_pitch(notes[i])
+            voice.set_pitch(pitches[i])
             voice.set_volume(volume)
             writer.add_voice(voice)
         note_start_time = offset + i * note_length
@@ -78,7 +78,7 @@ def simple_sequence(notes, note_length, note_release, offset, volume, voice_make
         writer.add_command(note_start_time + note_length * note_release, note_off_command)
 
 
-def simple_sequence_slide(notes, note_length, slide_begin, offset, volume, voice_maker, writer):
+def simple_sequence_slide(pitches, note_length, slide_begin, offset, volume, voice_maker, writer):
     # the number of times a pitch will change durring a slide:
     num_changes = 100
     bend_length = note_length * (1 - slide_begin)
@@ -86,40 +86,40 @@ def simple_sequence_slide(notes, note_length, slide_begin, offset, volume, voice
     voice = voice_maker(0)
 
     def note_on_command():
-        voice.set_pitch(notes[0])
+        voice.set_pitch(pitches[0])
         voice.set_volume(volume)
         writer.add_voice(voice)
     writer.add_command(offset, note_on_command)
-    for i in range(1, len(notes)):
+    for i in range(1, len(pitches)):
         note_start = offset + note_length * (i - 1)
         bend_start = note_start + note_length * slide_begin
         for j in range(1, num_changes + 1):
             def pitch_command(i=i, j=j):
-                pitch = bpmd.lerp(notes[i - 1], notes[i], j / num_changes)
+                pitch = bpmd.lerp(pitches[i - 1], pitches[i], j / num_changes)
                 voice.set_pitch(pitch)
             writer.add_command(bend_start + bend_length * (j / num_changes), pitch_command)
 
     def finish_up():
         voice.release()
-    writer.add_command(offset + note_length * len(notes) - bend_length, finish_up)
+    writer.add_command(offset + note_length * len(pitches) - bend_length, finish_up)
 
 
-# These are the notes used by the scale section
-major_scale_notes = [0, 2, 4, 5, 7, 9, 11]
+# These are the pitches used by the scale section
+major_scale_pitches = [0, 2, 4, 5, 7, 9, 11]
 major_triad = [0, 4, 7]
-root_note = 69
+root_pitch = 69
 
-arpeggio_notes = major_triad * 6
-# arpeggio_notes = [0, 4, 7, 0 + 12, 4 + 12, 7 + 12, 24, 7 + 12, 4 + 12, 12, 7, 4] * 4
-# random.shuffle(major_scale_notes)
-melody_notes = major_scale_notes + [12, 14, 12] + major_scale_notes[::-1]
-bassline_notes = [0, None, None, None, 12, None, None, 0, 0, None, 0, None, 12, None, 0, None]
-bassline_notes = bassline_notes + [x + 7 if x is not None else None for x in bassline_notes] + [0]
+arpeggio_pitches = major_triad * 6
+# arpeggio_pitches = [0, 4, 7, 0 + 12, 4 + 12, 7 + 12, 24, 7 + 12, 4 + 12, 12, 7, 4] * 4
+# random.shuffle(major_scale_pitches)
+melody_pitches = major_scale_pitches + [12, 14, 12] + major_scale_pitches[::-1]
+bassline_pitches = [0, None, None, None, 12, None, None, 0, 0, None, 0, None, 12, None, 0, None]
+bassline_pitches = bassline_pitches + [x + 7 if x is not None else None for x in bassline_pitches] + [0]
 
-# Make note numbers absoulute from the root, instead of relative.
-arpeggio_notes = [x + root_note for x in arpeggio_notes]
-melody_notes = [x + root_note for x in melody_notes]
-bassline_notes = [x + root_note - 36 if x is not None else None for x in bassline_notes]
+# Make pitch numbers absoulute from the root, instead of relative.
+arpeggio_pitches = [x + root_pitch for x in arpeggio_pitches]
+melody_pitches = [x + root_pitch for x in melody_pitches]
+bassline_pitches = [x + root_pitch - 36 if x is not None else None for x in bassline_pitches]
 
 
 beat_bass = [1,    None,  None,  None,
@@ -151,16 +151,24 @@ def flat_adsr_saw_voice_maker(i):
 
 # portamento and vibrato sinewave section
 start_slides = 0.0
-simple_sequence_slide(arpeggio_notes, 0.25, 0.95, start_slides, 0.25, simple_voice_maker_maker(EchoSine), writer)
-end_slides = len(arpeggio_notes) * 0.25 + 0.5
+simple_sequence_slide(
+    pitches=arpeggio_pitches,
+    note_length=0.25,
+    slide_begin=0.95,
+    offset=start_slides,
+    volume=0.25,
+    voice_maker=simple_voice_maker_maker(EchoSine),
+    writer=writer
+)
+end_slides = len(arpeggio_pitches) * 0.25 + 0.5
 
 # scale section
 start_scale_section = end_slides
-simple_sequence(melody_notes, 0.25, 0.5, start_scale_section, 0.25, simple_voice_maker_maker(bpmd.Saw), writer)
-simple_sequence(arpeggio_notes, 1.0/24.0, 1.0, start_scale_section, 0.0625, flat_adsr_saw_voice_maker, writer)
-simple_sequence([x + 7 for x in arpeggio_notes], 1.0/24.0, 1.0, start_scale_section + 2.0, 0.0625, flat_adsr_saw_voice_maker, writer)
-simple_sequence(arpeggio_notes, 1.0/24.0, 1.0, start_scale_section + 4.0, 0.0625, flat_adsr_saw_voice_maker, writer)
-simple_sequence(bassline_notes, 0.125, 0.5, start_scale_section, 0.25, simple_voice_maker_maker(bpmd.Square), writer)
+simple_sequence(melody_pitches, 0.25, 0.5, start_scale_section, 0.25, simple_voice_maker_maker(bpmd.Saw), writer)
+simple_sequence(arpeggio_pitches, 1.0/24.0, 1.0, start_scale_section, 0.0625, flat_adsr_saw_voice_maker, writer)
+simple_sequence([x + 7 for x in arpeggio_pitches], 1.0/24.0, 1.0, start_scale_section + 2.0, 0.0625, flat_adsr_saw_voice_maker, writer)
+simple_sequence(arpeggio_pitches, 1.0/24.0, 1.0, start_scale_section + 4.0, 0.0625, flat_adsr_saw_voice_maker, writer)
+simple_sequence(bassline_pitches, 0.125, 0.5, start_scale_section, 0.25, simple_voice_maker_maker(bpmd.Square), writer)
 simple_sequence(beat_bass, 1/8.0, 1/16.0, start_scale_section, 0.25, simple_voice_maker_maker(BassDrum), writer)
 simple_sequence(beat_snare, 1/8.0, 1/16.0, start_scale_section, 0.25, simple_voice_maker_maker(bpmd.Noise), writer)
 scale_section_over = start_scale_section + 4.0
