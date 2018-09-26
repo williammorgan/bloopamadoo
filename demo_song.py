@@ -145,7 +145,10 @@ def simple_voice_maker_maker(voice_class):
 
 def flat_adsr_saw_voice_maker(i):
     voice = bpmd.Saw(writer.samples_per_second)
-    voice.adsr = bpmd.adsr_generator(0.0001, 0.0001, 1.0, 0.0001, samples_per_second)
+    voice.adsr = bpmd.adsr_generator(
+        0.0001, 0.0001, 1.0, 0.0001,
+        samples_per_second
+    )
     return voice
 
 
@@ -164,23 +167,108 @@ end_section_slides = len(arpeggio_pitches) * 0.25 + 0.5
 
 # scale section
 start_section_scale = end_section_slides
-simple_sequence(melody_pitches, 0.25, 0.5, start_section_scale, 0.25, simple_voice_maker_maker(bpmd.Saw), writer)
-simple_sequence(arpeggio_pitches, 1.0/24.0, 1.0, start_section_scale, 0.0625, flat_adsr_saw_voice_maker, writer)
-simple_sequence([x + 7 for x in arpeggio_pitches], 1.0/24.0, 1.0, start_section_scale + 2.0, 0.0625, flat_adsr_saw_voice_maker, writer)
-simple_sequence(arpeggio_pitches, 1.0/24.0, 1.0, start_section_scale + 4.0, 0.0625, flat_adsr_saw_voice_maker, writer)
-simple_sequence(bassline_pitches, 0.125, 0.5, start_section_scale, 0.25, simple_voice_maker_maker(bpmd.Square), writer)
-simple_sequence(beat_bass, 1/8.0, 1/16.0, start_section_scale, 0.25, simple_voice_maker_maker(BassDrum), writer)
-simple_sequence(beat_snare, 1/8.0, 1/16.0, start_section_scale, 0.25, simple_voice_maker_maker(bpmd.Noise), writer)
+simple_sequence(
+    melody_pitches,
+    0.25,
+    0.5,
+    start_section_scale,
+    0.25,
+    simple_voice_maker_maker(bpmd.Saw),
+    writer
+)
+simple_sequence(
+    arpeggio_pitches,
+    1.0/24.0,
+    1.0,
+    start_section_scale,
+    0.0625,
+    flat_adsr_saw_voice_maker,
+    writer
+)
+simple_sequence(
+    [x + 7 for x in arpeggio_pitches],
+    1.0/24.0,
+    1.0,
+    start_section_scale + 2.0,
+    0.0625,
+    flat_adsr_saw_voice_maker,
+    writer
+)
+simple_sequence(
+    arpeggio_pitches,
+    1.0/24.0,
+    1.0,
+    start_section_scale + 4.0,
+    0.0625,
+    flat_adsr_saw_voice_maker,
+    writer
+)
+simple_sequence(
+    bassline_pitches,
+    0.125,
+    0.5,
+    start_section_scale,
+    0.25,
+    simple_voice_maker_maker(bpmd.Square),
+    writer
+)
+simple_sequence(
+    beat_bass,
+    1/8.0,
+    1/16.0,
+    start_section_scale,
+    0.25,
+    simple_voice_maker_maker(BassDrum),
+    writer
+)
+simple_sequence(
+    beat_snare,
+    1/8.0,
+    1/16.0,
+    start_section_scale,
+    0.25,
+    simple_voice_maker_maker(bpmd.Noise),
+    writer
+)
 end_section_scale = start_section_scale + 4.0
 
 # noise_beat_section
 start_section_noise = end_section_scale
-simple_sequence(range(1, 17), .25, 0.75, start_section_noise, 1.0, lambda i: FilteredNoise(writer.samples_per_second), writer)
-beat_noise = [20, 99, 99, 99, 1, 0, 20, 99, 20, 99, 99, 99, 1, 99, 99, 99]*3
-simple_sequence(beat_noise, .25, 0.75, start_section_noise + 4.0, 1.0, lambda i: FilteredNoise(writer.samples_per_second), writer)
-beat_noise_bass = [1, None, None, None, None, None, 1, None, 1, None, None, None, None, None, None, None]*2
-simple_sequence(beat_noise_bass, .25, 0.75, start_section_noise + 8.0, 1.0, simple_voice_maker_maker(BassDrum), writer)
-noise_beat_over = start_section_noise + 12.0
-
+simple_sequence(
+    range(1, 17),
+    .25,
+    0.75,
+    start_section_noise,
+    1.0,
+    lambda i: FilteredNoise(writer.samples_per_second),
+    writer
+)
+beat_noise = [
+    20, 99, 99, 99, 1, 0, 20, 99,
+    20, 99, 99, 99, 1, 99, 99, 99
+] * 3
+simple_sequence(
+    beat_noise,
+    .25,
+    0.75,
+    start_section_noise + 4.0,
+    1.0,
+    lambda i: FilteredNoise(writer.samples_per_second),
+    writer
+)
+beat_noise_bass = [
+    1, None, None, None, None, None, 1, None,
+    1, None, None, None, None, None, None, None
+] * 2
+simple_sequence(
+    beat_noise_bass,
+    .25,
+    0.75,
+    start_section_noise + 8.0,
+    1.0,
+    simple_voice_maker_maker(BassDrum),
+    writer
+)
+end_section_noise = start_section_noise + 12.0
 
 writer.write_output('demo_song.wav')
