@@ -189,16 +189,16 @@ bassline_pitches = [
 ]
 
 beat_bass = [
-    1,    None,  None,  None,
-    None, None,  1,     1,
-    1,    None,  1,     None,
+       1, None,  None,  None,
+    None, None,     1,     1,
+       1, None,     1,  None,
     None, None,  None,  None
 ]
 beat_snare = [
     None, None,  None,  None,
-    1,    None,  None,  None,
+       1, None,  None,  None,
     None, None,  None,  None,
-    1,    None,  None,  None
+       1, None,  None,  None
 ]
 beat_bass = beat_bass * 2
 beat_snare = beat_snare * 2
