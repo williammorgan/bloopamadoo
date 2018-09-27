@@ -187,15 +187,18 @@ bassline_pitches = [
     for x in bassline_pitches
 ]
 
-
-beat_bass = [1,    None,  None,  None,
-             None, None,  1,     1,
-             1,    None,  1,     None,
-             None, None,  None,  None]
-beat_snare = [None, None,  None,  None,
-              1,    None,  None,  None,
-              None, None,  None,  None,
-              1,    None,  None,  None]
+beat_bass = [
+    1,    None,  None,  None,
+    None, None,  1,     1,
+    1,    None,  1,     None,
+    None, None,  None,  None
+]
+beat_snare = [
+    None, None,  None,  None,
+    1,    None,  None,  None,
+    None, None,  None,  None,
+    1,    None,  None,  None
+]
 beat_bass = beat_bass * 2
 beat_snare = beat_snare * 2
 
@@ -248,8 +251,8 @@ simple_sequence(
     lambda i: FilteredNoise(writer.samples_per_second), writer
 )
 beat_noise = [
-    20, 99, 99, 99, 1, 0, 20, 99,
-    20, 99, 99, 99, 1, 99, 99, 99
+    20, 99, 99, 99,  1,  0, 20, 99,
+    20, 99, 99, 99,  1, 99, 99, 99
 ] * 3
 simple_sequence(
     beat_noise, .25, 0.75,
@@ -257,7 +260,7 @@ simple_sequence(
     lambda i: FilteredNoise(writer.samples_per_second), writer
 )
 beat_noise_bass = [
-    1, None, None, None, None, None, 1, None,
+    1, None, None, None, None, None,    1, None,
     1, None, None, None, None, None, None, None
 ] * 2
 simple_sequence(
