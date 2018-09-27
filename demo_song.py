@@ -2,6 +2,7 @@ import bloopamadoo as bpmd
 import math
 import random
 
+
 # These are examples of custom voices made in the song file
 class BassDrum(bpmd.TimedVoice):
 
