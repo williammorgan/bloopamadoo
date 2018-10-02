@@ -1,3 +1,4 @@
+# Copyright (C) 2018  William Morgan
 import bloopamadoo as bpmd
 import math
 import random

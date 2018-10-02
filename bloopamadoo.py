@@ -1,3 +1,4 @@
+# Copyright (C) 2018  William Morgan
 import wave
 import math
 import random
