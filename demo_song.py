@@ -147,18 +147,41 @@ def flat_adsr_saw_voice_maker(i):
 ###
 start_section_slides = 0.0
 
-slide_pitches = [0, 4, 7, 12, 16, 19, 24, 19, 16, 12, 7, 4] * 2 + [0]
+slide_pitches = [0, 4, 7, 12, 16, 19, 24, 19, 16, 12, 7, 4] * 1
 slide_pitches = [x + 69 for x in slide_pitches]
 simple_sequence_slide(
-    pitches=slide_pitches,
-    note_length=0.25,
-    slide_begin=0.95,
-    offset=start_section_slides,
-    volume=0.25,
-    voice_maker=simple_voice_maker_maker(EchoSine),
-    writer=writer
+    pitches=slide_pitches, note_length=0.25, slide_begin=0.95,
+    offset=start_section_slides, volume=0.25,
+    voice_maker=simple_voice_maker_maker(EchoSine), writer=writer
 )
-end_section_slides = len(slide_pitches) * 0.25 + 0.5
+slide_pitches_2 = [
+    2, 5, 9,
+    2 + 12, 5 + 12, 9 + 12,
+    26,
+    9 + 12, 5 + 12, 2 + 12,
+    9, 5
+] * 1
+slide_pitches_2 = [x + 69 for x in slide_pitches_2]
+start_section_slides_2 = start_section_slides + len(slide_pitches) * 0.25
+simple_sequence_slide(
+    pitches=slide_pitches_2, note_length=0.25, slide_begin=0.95,
+    offset=start_section_slides_2, volume=0.25,
+    voice_maker=simple_voice_maker_maker(EchoSine), writer=writer
+)
+start_section_slides_3 = start_section_slides_2 + len(slide_pitches_2) * 0.25
+simple_sequence_slide(
+    pitches=slide_pitches, note_length=0.25, slide_begin=0.95,
+    offset=start_section_slides_3, volume=0.25,
+    voice_maker=simple_voice_maker_maker(EchoSine), writer=writer
+)
+vibrato_pitches = [69.5, 68.5] * 3
+start_section_slides_4 = start_section_slides_3 + len(slide_pitches) * 0.25
+simple_sequence_slide(
+    pitches=vibrato_pitches, note_length=0.5/len(vibrato_pitches), slide_begin=0.95,
+    offset=start_section_slides_4, volume=0.25,
+    voice_maker=simple_voice_maker_maker(EchoSine), writer=writer
+)
+end_section_slides = start_section_slides_4 + 0.5 + 0.5
 
 ###
 # scale section
