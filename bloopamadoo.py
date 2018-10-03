@@ -230,13 +230,16 @@ class Writer:
 
     def write_output(self, filename):
         final_data = bytearray()
-        self.timed_commands.sort(key=lambda a: a[0])
+        # Sort the list of commands so that we can execute them in order.
+        # Reverse the order so that we can pop from the end of the list:
+        # It is more efficient that way.
+        self.timed_commands.sort(key=lambda a: a[0], reverse=True)
         current_sample = 0
         while len(self.timed_commands) > 0 or len(self.voices) > 0:
             current_seconds = current_sample / 44100
             while len(self.timed_commands) > 0 and \
-                    self.timed_commands[0][0] <= current_seconds:
-                timed_command = self.timed_commands.pop(0)
+                    self.timed_commands[-1][0] <= current_seconds:
+                timed_command = self.timed_commands.pop()
                 timed_command[1]()
 
             sample = 0.0
